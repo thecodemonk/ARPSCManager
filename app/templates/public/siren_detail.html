@@ -63,9 +63,11 @@
         <td>{{ test.notes or '' }}</td>
         <td>
           {% if test.photo_filename %}
-          <a href="{{ url_for('media_photo', filename=test.photo_filename) }}" target="_blank">
+          <a href="#" data-bs-toggle="modal" data-bs-target="#photoModal"
+             data-photo="{{ url_for('media_photo', filename=test.photo_filename) }}"
+             data-caption="{{ test.siren.siren_id }} — {{ test.test_date | format_date }} ({{ test.observer }})">
             <img src="{{ url_for('media_photo', filename=test.photo_filename.replace('.jpg', '_thumb.jpg')) }}"
-                 alt="Test photo" class="rounded" style="max-height: 50px;">
+                 alt="Test photo" class="rounded" style="max-height: 50px; cursor: pointer;">
           </a>
           {% endif %}
         </td>
@@ -78,4 +80,26 @@
 <p class="text-muted">No tests recorded.</p>
 {% endif %}
 {% endfor %}
+
+<div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="photoModalLabel"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="photoModalImg" src="" alt="Test photo" class="img-fluid rounded">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('photoModal').addEventListener('show.bs.modal', function(e) {
+  var trigger = e.relatedTarget;
+  document.getElementById('photoModalImg').src = trigger.dataset.photo;
+  document.getElementById('photoModalLabel').textContent = trigger.dataset.caption;
+});
+</script>
 {% endblock %}
