@@ -37,30 +37,33 @@
     {% endfor %}
   </div>
 
+  <label class="form-label">Checks</label>
   <div class="row">
-    <div class="col-md-3 mb-3">
+    <div class="col-md-4 mb-3">
       <div class="form-check">
-        {{ form.passed(class="form-check-input") }}
-        {{ form.passed.label(class="form-check-label") }}
+        {{ form.sound_ok(class="form-check-input") }}
+        {{ form.sound_ok.label(class="form-check-label") }}
       </div>
     </div>
-    <div class="col-md-3 mb-3">
-      <div class="form-check">
-        {{ form.activated(class="form-check-input") }}
-        {{ form.activated.label(class="form-check-label") }}
-      </div>
-    </div>
-    <div class="col-md-3 mb-3" id="rotation-field">
+    <div class="col-md-4 mb-3" id="rotation-field">
       <div class="form-check">
         {{ form.rotation_ok(class="form-check-input") }}
         {{ form.rotation_ok.label(class="form-check-label") }}
       </div>
     </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-4 mb-3">
       <div class="form-check">
-        {{ form.condition_ok(class="form-check-input") }}
-        {{ form.condition_ok.label(class="form-check-label") }}
+        {{ form.vegetation_damage_ok(class="form-check-input") }}
+        {{ form.vegetation_damage_ok.label(class="form-check-label") }}
       </div>
+    </div>
+  </div>
+
+  <label class="form-label">Overall Result</label>
+  <div class="mb-3">
+    <div class="form-check">
+      {{ form.passed(class="form-check-input") }}
+      {{ form.passed.label(class="form-check-label") }}
     </div>
   </div>
 

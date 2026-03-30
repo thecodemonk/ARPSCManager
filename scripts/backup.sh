@@ -31,7 +31,7 @@ app = create_app('production')
 with app.app_context():
     for name, model, cols in [
         ('sirens', Siren, ['siren_id','name','location_text','location_url','year_in_service','siren_type','active','needs_retest']),
-        ('tests', Test, ['id','siren_id','test_date','observer','passed','activated','rotation_ok','condition_ok','notes']),
+        ('tests', Test, ['id','siren_id','test_date','observer','sound_ok','rotation_ok','vegetation_damage_ok','notes']),
         ('assignments', Assignment, ['id','siren_id','volunteer_name','test_date','status']),
         ('schedules', TestSchedule, ['id','test_date','test_time','description']),
     ]:

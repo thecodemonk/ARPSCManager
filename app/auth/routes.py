@@ -58,7 +58,7 @@ def callback():
 
     login_user(user)
     flash('Logged in successfully.', 'success')
-    return redirect(url_for('admin.index'))
+    return redirect(url_for('admin.sirens'))
 
 
 @auth_bp.route('/logout')

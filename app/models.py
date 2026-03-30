@@ -35,9 +35,9 @@ class Test(db.Model):
     test_date = db.Column(db.Date, nullable=False)
     observer = db.Column(db.Text, nullable=False)
     passed = db.Column(db.Boolean, nullable=False)
-    activated = db.Column(db.Boolean, nullable=False)
+    sound_ok = db.Column(db.Boolean, nullable=False)
     rotation_ok = db.Column(db.Boolean, nullable=True)  # NULL for FIXED type
-    condition_ok = db.Column(db.Boolean, nullable=False)
+    vegetation_damage_ok = db.Column(db.Boolean, nullable=False)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 

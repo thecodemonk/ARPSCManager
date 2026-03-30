@@ -87,6 +87,16 @@ def test_add():
     # Store siren types for JS conditional rotation field
     siren_types = {s.id: s.siren_type for s in active_sirens}
 
+    # Pre-fill from query params (e.g. coming from assignment "Log Result")
+    assignment_id = request.args.get('assignment', type=int)
+    if request.method == 'GET':
+        if request.args.get('siren'):
+            form.siren_id.data = request.args.get('siren', type=int)
+        if request.args.get('date'):
+            form.test_date.data = date.fromisoformat(request.args['date'])
+        if request.args.get('observer'):
+            form.observer.data = request.args['observer']
+
     if form.validate_on_submit():
         siren = db.session.get(Siren, form.siren_id.data)
         rotation_ok = form.rotation_ok.data if siren.siren_type == 'ROTATE' else None
@@ -96,9 +106,9 @@ def test_add():
             test_date=form.test_date.data,
             observer=form.observer.data.strip(),
             passed=form.passed.data,
-            activated=form.activated.data,
+            sound_ok=form.sound_ok.data,
             rotation_ok=rotation_ok,
-            condition_ok=form.condition_ok.data,
+            vegetation_damage_ok=form.vegetation_damage_ok.data,
             notes=form.notes.data.strip() if form.notes.data else None,
         )
         db.session.add(test)
@@ -107,18 +117,22 @@ def test_add():
         if test.passed and siren.needs_retest:
             siren.needs_retest = False
 
-        # Auto-complete matching CLAIMED assignment
-        matching = Assignment.query.filter_by(
-            siren_id=siren.id,
-            test_date=test.test_date,
-            status='CLAIMED',
-        ).first()
-        if matching:
-            matching.status = 'COMPLETED'
+        # Auto-complete the linked assignment, or find a matching one
+        linked = db.session.get(Assignment, assignment_id) if assignment_id else None
+        if linked and linked.status == 'CLAIMED':
+            linked.status = 'COMPLETED'
+        else:
+            matching = Assignment.query.filter_by(
+                siren_id=siren.id,
+                test_date=test.test_date,
+                status='CLAIMED',
+            ).first()
+            if matching:
+                matching.status = 'COMPLETED'
 
         db.session.commit()
         flash('Test result recorded.', 'success')
-        return redirect(url_for('admin.tests'))
+        return redirect(url_for('admin.assignments'))
 
     return render_template('admin/test_form.html', form=form, siren_types=siren_types)
 
@@ -222,7 +236,7 @@ def export_csv(table):
         rows = Siren.query.order_by(Siren.siren_id).all()
     elif table == 'tests':
         columns = ['siren_id', 'test_date', 'observer', 'passed',
-                    'activated', 'rotation_ok', 'condition_ok', 'notes']
+                    'sound_ok', 'rotation_ok', 'vegetation_damage_ok', 'notes']
         rows = Test.query.join(Siren).order_by(Test.test_date.desc()).all()
         # Replace FK with siren external ID
         def row_dict(t):

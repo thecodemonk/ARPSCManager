@@ -86,6 +86,10 @@ def signup():
         for s in upcoming
     ]
 
+    # Pre-select siren from query param
+    if request.method == 'GET' and request.args.get('siren'):
+        form.siren_id.data = request.args.get('siren', type=int)
+
     if form.validate_on_submit():
         # Honeypot check
         if form.website.data:

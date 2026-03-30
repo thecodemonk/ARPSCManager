@@ -15,12 +15,14 @@
     <h2 class="card-title">{{ siren.siren_id }} — {{ siren.name }}</h2>
     <dl class="row mb-0">
       <dt class="col-sm-3">Location</dt>
+      <dd class="col-sm-9">{{ siren.location_text or 'N/A' }}</dd>
+      {% if siren.location_url %}
+      <dt class="col-sm-3">Map</dt>
       <dd class="col-sm-9">
-        {{ siren.location_text or 'N/A' }}
-        {% if siren.location_url %}
-        <a href="{{ siren.location_url }}" target="_blank" rel="noopener">(Map)</a>
-        {% endif %}
+        <a href="{{ siren.location_url }}" target="_blank" rel="noopener" class="btn btn-outline-primary mb-2">Open in Google Maps</a>
+        <iframe src="https://maps.google.com/maps?q={{ siren.location_text | urlencode }}&t=&z=15&ie=UTF8&iwloc=&output=embed" width="100%" height="350" style="border:0; border-radius: 0.375rem;" allowfullscreen loading="lazy"></iframe>
       </dd>
+      {% endif %}
       <dt class="col-sm-3">Type</dt>
       <dd class="col-sm-9">{{ siren.siren_type }}</dd>
       <dt class="col-sm-3">Year in Service</dt>
@@ -42,9 +44,9 @@
         <th>Date</th>
         <th>Observer</th>
         <th>Passed</th>
-        <th>Activated</th>
+        <th>Sound</th>
         <th>Rotation</th>
-        <th>Condition</th>
+        <th>Veg/Damage</th>
         <th>Notes</th>
       </tr>
     </thead>
@@ -54,9 +56,9 @@
         <td>{{ test.test_date | format_date }}</td>
         <td>{{ test.observer }}</td>
         <td>{{ test.passed | yesno }}</td>
-        <td>{{ test.activated | yesno }}</td>
+        <td>{{ test.sound_ok | yesno }}</td>
         <td>{{ test.rotation_ok | yesno }}</td>
-        <td>{{ test.condition_ok | yesno }}</td>
+        <td>{{ test.vegetation_damage_ok | yesno }}</td>
         <td>{{ test.notes or '' }}</td>
       </tr>
       {% endfor %}

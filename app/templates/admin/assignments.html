@@ -29,9 +29,9 @@
         </td>
         <td>
           {% if assignment.status == 'CLAIMED' %}
+          <a href="{{ url_for('admin.test_add', siren=assignment.siren.id, date=assignment.test_date.isoformat(), observer=assignment.volunteer_name, assignment=assignment.id) }}" class="btn btn-success btn-sm">Log Result</a>
           <form method="post" action="{{ url_for('admin.assignment_action', id=assignment.id) }}" class="d-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button name="action" value="complete" class="btn btn-success btn-sm">Complete</button>
             <button name="action" value="release" class="btn btn-outline-secondary btn-sm">Release</button>
           </form>
           {% endif %}
