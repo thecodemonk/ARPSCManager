@@ -35,6 +35,11 @@
             <button name="action" value="release" class="btn btn-outline-secondary btn-sm">Release</button>
           </form>
           {% endif %}
+          <form method="post" action="{{ url_for('admin.assignment_delete', id=assignment.id) }}" class="d-inline"
+                onsubmit="return confirm('Delete this assignment?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+          </form>
         </td>
       </tr>
       {% endfor %}

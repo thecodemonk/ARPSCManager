@@ -1,9 +1,9 @@
 {% extends "admin/layout.html" %}
 
-{% block title %}Record Test — SirenTracker{% endblock %}
+{% block title %}{{ 'Edit' if editing else 'Record' }} Test — SirenTracker{% endblock %}
 
 {% block admin_content %}
-<h2>Record Test Result</h2>
+<h2>{{ 'Edit' if editing else 'Record' }} Test Result</h2>
 
 <form method="post">
   {{ form.hidden_tag() }}
@@ -72,7 +72,7 @@
     {{ form.notes(class="form-control", rows="3") }}
   </div>
 
-  <button type="submit" class="btn btn-primary">Save Test</button>
+  <button type="submit" class="btn btn-primary">{{ 'Update' if editing else 'Save' }} Test</button>
   <a href="{{ url_for('admin.tests') }}" class="btn btn-secondary">Cancel</a>
 </form>
 {% endblock %}

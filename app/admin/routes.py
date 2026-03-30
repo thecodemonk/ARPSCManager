@@ -136,7 +136,52 @@ def test_add():
             return redirect(url_for('admin.assignments'))
         return redirect(url_for('admin.tests'))
 
-    return render_template('admin/test_form.html', form=form, siren_types=siren_types)
+    return render_template('admin/test_form.html', form=form, siren_types=siren_types,
+                           editing=False)
+
+
+@admin_bp.route('/tests/<int:id>/edit', methods=['GET', 'POST'])
+@admin_required
+def test_edit(id):
+    test = db.session.get(Test, id) or abort(404)
+    form = TestForm(obj=test)
+    active_sirens = Siren.query.filter_by(active=True).order_by(Siren.siren_id).all()
+    # Include the test's siren even if inactive
+    siren_ids = {s.id for s in active_sirens}
+    if test.siren.id not in siren_ids:
+        active_sirens.insert(0, test.siren)
+    form.siren_id.choices = [
+        (s.id, f'{s.siren_id} — {s.name}')
+        for s in active_sirens
+    ]
+    siren_types = {s.id: s.siren_type for s in active_sirens}
+
+    if form.validate_on_submit():
+        siren = db.session.get(Siren, form.siren_id.data)
+        test.siren_id = form.siren_id.data
+        test.test_date = form.test_date.data
+        test.observer = form.observer.data.strip()
+        test.passed = form.passed.data
+        test.sound_ok = form.sound_ok.data
+        test.rotation_ok = form.rotation_ok.data if siren.siren_type == 'ROTATE' else None
+        test.vegetation_damage_ok = form.vegetation_damage_ok.data
+        test.notes = form.notes.data.strip() if form.notes.data else None
+        db.session.commit()
+        flash('Test result updated.', 'success')
+        return redirect(url_for('admin.tests'))
+
+    return render_template('admin/test_form.html', form=form, siren_types=siren_types,
+                           editing=True)
+
+
+@admin_bp.route('/tests/<int:id>/delete', methods=['POST'])
+@admin_required
+def test_delete(id):
+    test = db.session.get(Test, id) or abort(404)
+    db.session.delete(test)
+    db.session.commit()
+    flash('Test result deleted.', 'info')
+    return redirect(url_for('admin.tests'))
 
 
 # --- Assignments ---
@@ -165,6 +210,16 @@ def assignment_action(id):
         assignment.status = 'RELEASED'
         flash('Assignment released.', 'info')
     db.session.commit()
+    return redirect(url_for('admin.assignments'))
+
+
+@admin_bp.route('/assignments/<int:id>/delete', methods=['POST'])
+@admin_required
+def assignment_delete(id):
+    assignment = db.session.get(Assignment, id) or abort(404)
+    db.session.delete(assignment)
+    db.session.commit()
+    flash('Assignment deleted.', 'info')
     return redirect(url_for('admin.assignments'))
 
 
@@ -292,9 +347,13 @@ def import_export():
                            preview_rows=None, preview_cols=None, import_id=None)
 
 
-@admin_bp.route('/import', methods=['POST'])
+@admin_bp.route('/import/<table>', methods=['POST'])
 @admin_required
-def import_csv():
+def import_csv(table):
+    if table not in ('sirens', 'tests', 'assignments', 'schedules'):
+        flash('Unknown import type.', 'danger')
+        return redirect(url_for('admin.import_export'))
+
     file = request.files.get('file')
     if not file or not file.filename.endswith('.csv'):
         flash('Please upload a CSV file.', 'danger')
@@ -315,17 +374,27 @@ def import_csv():
         f.write(content)
 
     session['import_path'] = tmp_path
+    session['import_table'] = table
 
     return render_template('admin/import_export.html',
                            preview_rows=rows[:50],
                            preview_cols=reader.fieldnames,
-                           import_id=import_id)
+                           import_id=import_id,
+                           import_table=table)
+
+
+def _to_bool(val):
+    """Convert CSV string to bool."""
+    if not val or val.strip() == '':
+        return None
+    return val.strip().lower() in ('true', '1', 'yes')
 
 
 @admin_bp.route('/import/confirm', methods=['POST'])
 @admin_required
 def import_confirm():
     tmp_path = session.pop('import_path', None)
+    table = session.pop('import_table', 'sirens')
     if not tmp_path or not os.path.exists(tmp_path):
         flash('Import session expired. Please upload again.', 'warning')
         return redirect(url_for('admin.import_export'))
@@ -334,31 +403,117 @@ def import_confirm():
         reader = csv.DictReader(f)
         added = 0
         updated = 0
-        for row in reader:
-            ext_id = row.get('siren_id', '').strip()
-            if not ext_id:
-                continue
-            existing = Siren.query.filter_by(siren_id=ext_id).first()
-            if existing:
-                existing.name = row.get('name', existing.name).strip()
-                existing.location_text = row.get('location_text', existing.location_text)
-                existing.location_url = row.get('location_url', existing.location_url)
-                existing.year_in_service = row.get('year_in_service', existing.year_in_service)
-                existing.siren_type = row.get('siren_type', existing.siren_type) or 'FIXED'
-                updated += 1
-            else:
-                siren = Siren(
-                    siren_id=ext_id,
-                    name=row.get('name', ext_id).strip(),
-                    location_text=row.get('location_text'),
-                    location_url=row.get('location_url'),
-                    year_in_service=row.get('year_in_service'),
-                    siren_type=row.get('siren_type', 'FIXED') or 'FIXED',
+        skipped = 0
+
+        if table == 'sirens':
+            for row in reader:
+                ext_id = row.get('siren_id', '').strip()
+                if not ext_id:
+                    continue
+                existing = Siren.query.filter_by(siren_id=ext_id).first()
+                if existing:
+                    existing.name = row.get('name', existing.name).strip()
+                    existing.location_text = row.get('location_text', existing.location_text)
+                    existing.location_url = row.get('location_url', existing.location_url)
+                    existing.year_in_service = row.get('year_in_service', existing.year_in_service)
+                    existing.siren_type = row.get('siren_type', existing.siren_type) or 'FIXED'
+                    updated += 1
+                else:
+                    siren = Siren(
+                        siren_id=ext_id,
+                        name=row.get('name', ext_id).strip(),
+                        location_text=row.get('location_text'),
+                        location_url=row.get('location_url'),
+                        year_in_service=row.get('year_in_service'),
+                        siren_type=row.get('siren_type', 'FIXED') or 'FIXED',
+                    )
+                    db.session.add(siren)
+                    added += 1
+
+        elif table == 'tests':
+            for row in reader:
+                ext_id = row.get('siren_id', '').strip()
+                if not ext_id:
+                    continue
+                siren = Siren.query.filter_by(siren_id=ext_id).first()
+                if not siren:
+                    skipped += 1
+                    continue
+                try:
+                    test_date_val = date.fromisoformat(row['test_date'].strip())
+                except (ValueError, KeyError):
+                    skipped += 1
+                    continue
+                existing = Test.query.filter_by(
+                    siren_id=siren.id, test_date=test_date_val).first()
+                if existing:
+                    skipped += 1
+                    continue
+                test = Test(
+                    siren_id=siren.id,
+                    test_date=test_date_val,
+                    observer=row.get('observer', 'Unknown').strip(),
+                    passed=_to_bool(row.get('passed', 'false')),
+                    sound_ok=_to_bool(row.get('sound_ok', 'false')),
+                    rotation_ok=_to_bool(row.get('rotation_ok')),
+                    vegetation_damage_ok=_to_bool(row.get('vegetation_damage_ok', 'false')),
+                    notes=row.get('notes', '').strip() or None,
                 )
-                db.session.add(siren)
+                db.session.add(test)
                 added += 1
+
+        elif table == 'assignments':
+            for row in reader:
+                ext_id = row.get('siren_id', '').strip()
+                if not ext_id:
+                    continue
+                siren = Siren.query.filter_by(siren_id=ext_id).first()
+                if not siren:
+                    skipped += 1
+                    continue
+                try:
+                    test_date_val = date.fromisoformat(row['test_date'].strip())
+                except (ValueError, KeyError):
+                    skipped += 1
+                    continue
+                assignment = Assignment(
+                    siren_id=siren.id,
+                    volunteer_name=row.get('volunteer_name', '').strip(),
+                    test_date=test_date_val,
+                    status=row.get('status', 'CLAIMED').strip().upper(),
+                )
+                db.session.add(assignment)
+                added += 1
+
+        elif table == 'schedules':
+            for row in reader:
+                try:
+                    test_date_val = date.fromisoformat(row['test_date'].strip())
+                except (ValueError, KeyError):
+                    skipped += 1
+                    continue
+                existing = TestSchedule.query.filter_by(
+                    test_date=test_date_val).first()
+                if existing:
+                    skipped += 1
+                    continue
+                schedule = TestSchedule(
+                    test_date=test_date_val,
+                    test_time=row.get('test_time', '13:00').strip(),
+                    description=row.get('description', 'Monthly Test').strip(),
+                )
+                db.session.add(schedule)
+                added += 1
+
         db.session.commit()
 
     os.unlink(tmp_path)
-    flash(f'Import complete: {added} added, {updated} updated.', 'success')
+    parts = []
+    if added:
+        parts.append(f'{added} added')
+    if updated:
+        parts.append(f'{updated} updated')
+    if skipped:
+        parts.append(f'{skipped} skipped')
+    flash(f'Import complete: {", ".join(parts)}.', 'success')
     return redirect(url_for('admin.import_export'))
