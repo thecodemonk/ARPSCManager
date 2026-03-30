@@ -33,6 +33,7 @@ def status_badge(status):
     """Map siren status to badge CSS class name."""
     return {
         'failed': 'failed',
+        'overdue': 'overdue',
         'assigned': 'assigned',
         'flagged': 'flagged',
         'passed': 'passed',
