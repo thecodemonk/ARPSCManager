@@ -1,0 +1,66 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}{{ 'Edit' if siren else 'Add' }} Siren — SirenTracker{% endblock %}
+
+{% block admin_content %}
+<h2>{{ 'Edit' if siren else 'Add' }} Siren</h2>
+
+<form method="post">
+  {{ form.hidden_tag() }}
+
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      {{ form.siren_id.label(class="form-label") }}
+      {{ form.siren_id(class="form-control") }}
+      {% for error in form.siren_id.errors %}
+      <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="col-md-6 mb-3">
+      {{ form.name.label(class="form-label") }}
+      {{ form.name(class="form-control") }}
+      {% for error in form.name.errors %}
+      <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {{ form.location_text.label(class="form-label") }}
+    {{ form.location_text(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    {{ form.location_url.label(class="form-label") }}
+    {{ form.location_url(class="form-control", placeholder="https://maps.google.com/...") }}
+  </div>
+
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      {{ form.year_in_service.label(class="form-label") }}
+      {{ form.year_in_service(class="form-control") }}
+    </div>
+    <div class="col-md-4 mb-3">
+      {{ form.siren_type.label(class="form-label") }}
+      {{ form.siren_type(class="form-select") }}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check">
+      {{ form.active(class="form-check-input") }}
+      {{ form.active.label(class="form-check-label") }}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <div class="form-check">
+      {{ form.needs_retest(class="form-check-input") }}
+      {{ form.needs_retest.label(class="form-check-label") }}
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save</button>
+  <a href="{{ url_for('admin.sirens') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

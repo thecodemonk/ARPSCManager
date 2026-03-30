@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Volunteer Signup — SirenTracker{% endblock %}
+
+{% block content %}
+<h1>Volunteer Signup</h1>
+<p>Sign up to observe a siren during an upcoming test. Enter your name or callsign and pick a siren and test date.</p>
+
+<div class="row">
+  <div class="col-md-8 col-lg-6">
+    <form method="post" action="{{ url_for('public.signup') }}">
+      {{ form.hidden_tag() }}
+      {# Honeypot — hidden from real users #}
+      <div style="display: none;">
+        {{ form.website(tabindex="-1", autocomplete="off") }}
+      </div>
+
+      <div class="mb-3">
+        {{ form.volunteer_name.label(class="form-label") }}
+        {{ form.volunteer_name(class="form-control") }}
+        {% for error in form.volunteer_name.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.siren_id.label(class="form-label") }}
+        {{ form.siren_id(class="form-select") }}
+        {% for error in form.siren_id.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.test_date.label(class="form-label") }}
+        {{ form.test_date(class="form-select") }}
+        {% for error in form.test_date.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="mb-3">
+        {{ form.notes.label(class="form-label") }}
+        {{ form.notes(class="form-control", rows="3") }}
+      </div>
+
+      <button type="submit" class="btn btn-primary">Sign Up</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

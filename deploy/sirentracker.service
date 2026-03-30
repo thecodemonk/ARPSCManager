@@ -1,0 +1,15 @@
+[Unit]
+Description=SirenTracker Gunicorn Service
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/sirentracker
+EnvironmentFile=/opt/sirentracker/.env
+ExecStart=/opt/sirentracker/.venv/bin/gunicorn -w 2 -b 127.0.0.1:8100 wsgi:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

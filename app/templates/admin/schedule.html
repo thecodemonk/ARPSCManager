@@ -1,0 +1,78 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Test Schedule — SirenTracker{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Test Schedule</h2>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Generate Monthly Schedule</h5>
+    <form method="post" action="{{ url_for('admin.schedule_generate') }}" class="d-flex align-items-end gap-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label for="gen-year" class="form-label">Year</label>
+        <input type="number" name="year" id="gen-year" class="form-control" value="{{ current_year }}" min="2020" max="2040">
+      </div>
+      <button type="submit" class="btn btn-primary">Generate First-Monday Dates</button>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Add Special Test Date</h5>
+    <form method="post" action="{{ url_for('admin.schedule_add') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row align-items-end">
+        <div class="col-md-3">
+          <label for="special-date" class="form-label">Date</label>
+          <input type="date" name="test_date" id="special-date" class="form-control" required>
+        </div>
+        <div class="col-md-2">
+          <label for="special-time" class="form-label">Time</label>
+          <input type="text" name="test_time" id="special-time" class="form-control" value="13:00" required>
+        </div>
+        <div class="col-md-4">
+          <label for="special-desc" class="form-label">Description</label>
+          <input type="text" name="description" id="special-desc" class="form-control" value="Special Test" required>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary">Add</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<h4>Scheduled Tests</h4>
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in schedules %}
+      <tr>
+        <td>{{ entry.test_date | format_date }}</td>
+        <td>{{ entry.test_time }}</td>
+        <td>{{ entry.description }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin.schedule_delete', id=entry.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this scheduled date?')">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

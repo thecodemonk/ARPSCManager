@@ -1,0 +1,35 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Test Results — SirenTracker{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Test Results</h2>
+  <a href="{{ url_for('admin.test_add') }}" class="btn btn-primary btn-sm">Record Test</a>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Date</th>
+        <th>Siren</th>
+        <th>Observer</th>
+        <th>Passed</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for test in tests %}
+      <tr class="{{ 'table-success' if test.passed else 'table-danger' }}">
+        <td>{{ test.test_date | format_date }}</td>
+        <td>{{ test.siren.siren_id }} — {{ test.siren.name }}</td>
+        <td>{{ test.observer }}</td>
+        <td>{{ test.passed | yesno }}</td>
+        <td>{{ test.notes or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Import / Export — SirenTracker{% endblock %}
+
+{% block admin_content %}
+<h2>Import / Export</h2>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Export CSV</h5>
+    <p>Download current data as CSV files.</p>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('admin.export_csv', table='sirens') }}" class="btn btn-outline-primary">Sirens</a>
+      <a href="{{ url_for('admin.export_csv', table='tests') }}" class="btn btn-outline-primary">Tests</a>
+      <a href="{{ url_for('admin.export_csv', table='assignments') }}" class="btn btn-outline-primary">Assignments</a>
+      <a href="{{ url_for('admin.export_csv', table='schedules') }}" class="btn btn-outline-primary">Schedules</a>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Import Sirens CSV</h5>
+    <p>Upload a CSV file to import siren data. Columns: <code>siren_id, name, location_text, location_url, year_in_service, siren_type</code></p>
+    <form method="post" action="{{ url_for('admin.import_csv') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <input type="file" name="file" class="form-control" accept=".csv" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Upload &amp; Preview</button>
+    </form>
+  </div>
+</div>
+
+{% if preview_rows %}
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Preview ({{ preview_rows | length }} rows)</h5>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            {% for col in preview_cols %}
+            <th>{{ col }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in preview_rows %}
+          <tr>
+            {% for col in preview_cols %}
+            <td>{{ row[col] }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <form method="post" action="{{ url_for('admin.import_confirm') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="import_id" value="{{ import_id }}">
+      <button type="submit" class="btn btn-success">Confirm Import</button>
+      <a href="{{ url_for('admin.import_export') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

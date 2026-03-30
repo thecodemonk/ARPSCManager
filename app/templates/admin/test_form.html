@@ -1,0 +1,75 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Record Test — SirenTracker{% endblock %}
+
+{% block admin_content %}
+<h2>Record Test Result</h2>
+
+<form method="post">
+  {{ form.hidden_tag() }}
+
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      {{ form.siren_id.label(class="form-label") }}
+      <select name="siren_id" id="siren_id" class="form-select">
+        {% for value, label in form.siren_id.choices %}
+        <option value="{{ value }}" data-type="{{ siren_types.get(value, 'FIXED') }}" {% if form.siren_id.data == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {% for error in form.siren_id.errors %}
+      <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="col-md-6 mb-3">
+      {{ form.test_date.label(class="form-label") }}
+      {{ form.test_date(class="form-control") }}
+      {% for error in form.test_date.errors %}
+      <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {{ form.observer.label(class="form-label") }}
+    {{ form.observer(class="form-control", placeholder="Name or callsign") }}
+    {% for error in form.observer.errors %}
+    <div class="invalid-feedback d-block">{{ error }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="row">
+    <div class="col-md-3 mb-3">
+      <div class="form-check">
+        {{ form.passed(class="form-check-input") }}
+        {{ form.passed.label(class="form-check-label") }}
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="form-check">
+        {{ form.activated(class="form-check-input") }}
+        {{ form.activated.label(class="form-check-label") }}
+      </div>
+    </div>
+    <div class="col-md-3 mb-3" id="rotation-field">
+      <div class="form-check">
+        {{ form.rotation_ok(class="form-check-input") }}
+        {{ form.rotation_ok.label(class="form-check-label") }}
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="form-check">
+        {{ form.condition_ok(class="form-check-input") }}
+        {{ form.condition_ok.label(class="form-check-label") }}
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {{ form.notes.label(class="form-label") }}
+    {{ form.notes(class="form-control", rows="3") }}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save Test</button>
+  <a href="{{ url_for('admin.tests') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

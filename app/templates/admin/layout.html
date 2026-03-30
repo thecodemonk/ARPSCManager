@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-3 mb-3">
+    <div class="list-group">
+      <a href="{{ url_for('admin.sirens') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.sirens' or request.endpoint == 'admin.siren_add' or request.endpoint == 'admin.siren_edit' %}active{% endif %}">Sirens</a>
+      <a href="{{ url_for('admin.tests') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.tests' or request.endpoint == 'admin.test_add' %}active{% endif %}">Tests</a>
+      <a href="{{ url_for('admin.assignments') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.assignments' %}active{% endif %}">Assignments</a>
+      <a href="{{ url_for('admin.schedule') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.schedule' %}active{% endif %}">Schedule</a>
+      <a href="{{ url_for('admin.import_export') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.import_export' %}active{% endif %}">Import / Export</a>
+    </div>
+  </div>
+  <div class="col-md-9">
+    {% block admin_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

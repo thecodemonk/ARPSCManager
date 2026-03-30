@@ -1,0 +1,39 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Manage Sirens — SirenTracker{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Sirens</h2>
+  <a href="{{ url_for('admin.siren_add') }}" class="btn btn-primary btn-sm">Add Siren</a>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Active</th>
+        <th>Retest</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for siren in sirens %}
+      <tr class="{{ '' if siren.active else 'table-secondary' }}">
+        <td>{{ siren.siren_id }}</td>
+        <td>{{ siren.name }}</td>
+        <td>{{ siren.siren_type }}</td>
+        <td>{{ siren.active | yesno }}</td>
+        <td>{{ siren.needs_retest | yesno }}</td>
+        <td>
+          <a href="{{ url_for('admin.siren_edit', id=siren.id) }}" class="btn btn-outline-primary btn-sm">Edit</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+/* SirenTracker custom styles */
+
+.badge.bg-passed { background-color: #198754 !important; }
+.badge.bg-failed { background-color: #dc3545 !important; }
+.badge.bg-flagged { background-color: #0dcaf0 !important; color: #000; }
+.badge.bg-assigned { background-color: #ffc107 !important; color: #000; }
+.badge.bg-untested { background-color: #6c757d !important; }
+
+#siren-table tbody tr {
+  cursor: pointer;
+}
+
+.table-hover tbody tr:hover {
+  opacity: 0.9;
+}

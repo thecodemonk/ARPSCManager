@@ -1,0 +1,44 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Assignments — SirenTracker{% endblock %}
+
+{% block admin_content %}
+<h2>Volunteer Assignments</h2>
+
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Siren</th>
+        <th>Volunteer</th>
+        <th>Test Date</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for assignment in assignments %}
+      <tr>
+        <td>{{ assignment.siren.siren_id }} — {{ assignment.siren.name }}</td>
+        <td>{{ assignment.volunteer_name }}</td>
+        <td>{{ assignment.test_date | format_date }}</td>
+        <td>
+          <span class="badge bg-{{ 'success' if assignment.status == 'COMPLETED' else 'warning' if assignment.status == 'CLAIMED' else 'secondary' }}">
+            {{ assignment.status }}
+          </span>
+        </td>
+        <td>
+          {% if assignment.status == 'CLAIMED' %}
+          <form method="post" action="{{ url_for('admin.assignment_action', id=assignment.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button name="action" value="complete" class="btn btn-success btn-sm">Complete</button>
+            <button name="action" value="release" class="btn btn-outline-secondary btn-sm">Release</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
