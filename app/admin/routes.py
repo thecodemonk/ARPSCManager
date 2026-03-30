@@ -132,7 +132,9 @@ def test_add():
 
         db.session.commit()
         flash('Test result recorded.', 'success')
-        return redirect(url_for('admin.assignments'))
+        if assignment_id:
+            return redirect(url_for('admin.assignments'))
+        return redirect(url_for('admin.tests'))
 
     return render_template('admin/test_form.html', form=form, siren_types=siren_types)
 
