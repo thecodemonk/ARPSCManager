@@ -8,13 +8,19 @@
 .badge.bg-untested { background-color: #6c757d !important; }
 
 .status-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.4rem 1.5rem;
   font-size: 0.85rem;
+}
+.status-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 .status-legend .badge {
   font-weight: normal;
+  flex-shrink: 0;
 }
 
 #siren-table tbody tr {
