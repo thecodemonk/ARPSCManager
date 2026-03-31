@@ -43,6 +43,12 @@ with app.app_context():
         print(f'Exported {name}.csv')
 "
 
+# Copy photos
+if [ -d "${APP_DIR}/media/photos" ]; then
+    cp -r "${APP_DIR}/media/photos" "${BACKUP_DIR}/photos"
+    echo "Copied photos directory"
+fi
+
 # Upload to Google Drive
 rclone copy "${BACKUP_DIR}" "${RCLONE_REMOTE}/$(date +%Y-%m-%d)/" --log-level INFO
 
