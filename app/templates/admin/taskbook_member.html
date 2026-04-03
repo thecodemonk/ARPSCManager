@@ -1,0 +1,70 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ member.name }} — {{ level.name }} — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<h2 class="mb-2">Task Book Progress</h2>
+<p class="text-muted mb-3">
+  <strong>{{ member.name }}</strong>{% if member.callsign %} ({{ member.callsign }}){% endif %}
+  — {{ level.name }}
+</p>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead class="table-dark">
+        <tr>
+          <th style="width: 40px;"></th>
+          <th>Task</th>
+          <th>Date Completed</th>
+          <th>Officer 1</th>
+          <th>Officer 2</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+        {% set prog = progress_map.get(task.id) %}
+        <tr>
+          <td>
+            <input type="checkbox" name="task_{{ task.id }}" class="form-check-input"
+                   {% if prog and prog.completed_date %}checked{% endif %}>
+          </td>
+          <td>
+            <strong>{{ task.name }}</strong>
+            {% if task.description %}<br><small class="text-muted">{{ task.description }}</small>{% endif %}
+          </td>
+          <td>
+            <input type="date" name="date_{{ task.id }}" class="form-control form-control-sm"
+                   value="{{ prog.completed_date.isoformat() if prog and prog.completed_date else '' }}">
+          </td>
+          <td>
+            <select name="officer1_{{ task.id }}" class="form-select form-select-sm">
+              <option value="">—</option>
+              {% for o in officers %}
+              <option value="{{ o.id }}" {% if prog and prog.officer1_id == o.id %}selected{% endif %}>
+                {{ o.name }}{% if o.callsign %} ({{ o.callsign }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <select name="officer2_{{ task.id }}" class="form-select form-select-sm">
+              <option value="">—</option>
+              {% for o in officers %}
+              <option value="{{ o.id }}" {% if prog and prog.officer2_id == o.id %}selected{% endif %}>
+                {{ o.name }}{% if o.callsign %} ({{ o.callsign }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save Progress</button>
+  <a href="{{ url_for('admin.member_detail', id=member.id) }}" class="btn btn-secondary">Back to Member</a>
+</form>
+{% endblock %}

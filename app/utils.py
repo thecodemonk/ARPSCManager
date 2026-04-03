@@ -162,6 +162,26 @@ def _fix_orientation(img):
     return img
 
 
+def get_inactive_members(threshold_days=365):
+    """Return active members with no event attendance in the last threshold_days."""
+    from .models import Member, EventAttendance, Event
+    cutoff = date.today() - timedelta(days=threshold_days)
+
+    # Subquery: members who have attendance after cutoff
+    active_member_ids = (
+        db.session.query(EventAttendance.member_id)
+        .join(Event)
+        .filter(Event.date >= cutoff)
+        .distinct()
+        .subquery()
+    )
+
+    return Member.query.filter(
+        Member.active == True,
+        ~Member.id.in_(db.select(active_member_ids.c.member_id))
+    ).order_by(Member.name).all()
+
+
 def generate_first_mondays(year):
     """Generate first Monday of each month for a given year."""
     dates = []

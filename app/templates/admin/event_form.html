@@ -1,0 +1,45 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ 'Edit Event' if event else 'New Event' }} — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<h2 class="mb-4">{{ 'Edit Event' if event else 'New Event' }}</h2>
+
+<form method="post">
+  {{ form.hidden_tag() }}
+
+  <div class="row mb-3">
+    <div class="col-md-3">
+      {{ form.date.label(class="form-label") }}
+      {{ form.date(class="form-control") }}
+      {% for error in form.date.errors %}
+      <div class="invalid-feedback d-block">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="col-md-3">
+      {{ form.category.label(class="form-label") }}
+      {{ form.category(class="form-select") }}
+    </div>
+    <div class="col-md-3">
+      {{ form.event_type.label(class="form-label") }}
+      {{ form.event_type(class="form-select") }}
+    </div>
+    <div class="col-md-3">
+      {{ form.duration_hours.label(class="form-label") }}
+      {{ form.duration_hours(class="form-control", step="0.25") }}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {{ form.description.label(class="form-label") }}
+    {{ form.description(class="form-control", rows=2) }}
+  </div>
+
+  <div class="form-check mb-3">
+    {{ form.has_nts_liaison(class="form-check-input") }}
+    {{ form.has_nts_liaison.label(class="form-check-label") }}
+  </div>
+
+  <button type="submit" class="btn btn-primary">{{ 'Save' if event else 'Create Event' }}</button>
+  <a href="{{ url_for('admin.events') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

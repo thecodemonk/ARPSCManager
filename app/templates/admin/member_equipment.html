@@ -1,0 +1,33 @@
+{% extends "admin/layout.html" %}
+{% block title %}Equipment — {{ member.name }} — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<h2 class="mb-2">Edit Equipment</h2>
+<p class="text-muted mb-4">{{ member.name }}{% if member.callsign %} ({{ member.callsign }}){% endif %}</p>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  {% if equipment_types %}
+  {% for et in equipment_types %}
+  {% set item = current_items.get(et.id) %}
+  <div class="form-check mb-2">
+    <input type="checkbox" name="equip_{{ et.id }}" class="form-check-input"
+           id="equip_{{ et.id }}" {% if item %}checked{% endif %}>
+    <label class="form-check-label" for="equip_{{ et.id }}">{{ et.name }}</label>
+  </div>
+  {% if et.has_details %}
+  <div class="mb-3 ms-4" style="max-width: 300px;">
+    <input type="text" name="details_{{ et.id }}" class="form-control form-control-sm"
+           placeholder="Details (e.g. wattage, duration)" value="{{ item.details if item else '' }}">
+  </div>
+  {% endif %}
+  {% endfor %}
+  {% else %}
+  <p class="text-muted">No equipment types configured yet. <a href="{{ url_for('admin.config_equipment_types') }}">Add some</a>.</p>
+  {% endif %}
+
+  <button type="submit" class="btn btn-primary mt-3">Save Equipment</button>
+  <a href="{{ url_for('admin.member_detail', id=member.id) }}" class="btn btn-secondary mt-3">Cancel</a>
+</form>
+{% endblock %}

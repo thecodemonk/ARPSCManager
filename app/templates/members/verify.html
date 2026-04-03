@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Verify Code — ARPSC Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-4">
+    <h2 class="mb-4">Enter Your Code</h2>
+    <p class="text-muted">Check your email for a 6-digit login code, or click the link in the email.</p>
+
+    <form method="post">
+      {{ form.hidden_tag() }}
+
+      <div class="mb-3">
+        {{ form.code.label(class="form-label") }}
+        {{ form.code(class="form-control text-center", style="font-size: 1.5rem; letter-spacing: 0.5rem;", maxlength=6, autofocus=true) }}
+        {% for error in form.code.errors %}
+        <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">Verify</button>
+    </form>
+
+    <p class="text-center mt-3">
+      <a href="{{ url_for('members.login') }}">Request a new code</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-/* SirenTracker custom styles */
+/* ARPSC Manager custom styles */
 
 .badge.bg-passed { background-color: #198754 !important; }
 .badge.bg-failed { background-color: #dc3545 !important; }
@@ -29,4 +29,24 @@
 
 .table-hover tbody tr:hover {
   opacity: 0.9;
+}
+
+/* Cursor pointer for clickable rows */
+tr.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Print styles for reports */
+@media print {
+  .navbar, .list-group, .btn, footer, form.row {
+    display: none !important;
+  }
+  .col-md-9 {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+  .col-md-3 {
+    display: none !important;
+  }
 }

@@ -1,10 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Volunteer Signup — SirenTracker{% endblock %}
+{% block title %}Volunteer Signup — ARPSC Manager{% endblock %}
 
 {% block content %}
 <h1>Volunteer Signup</h1>
 <p>Sign up to observe a siren during an upcoming test. Enter your name or callsign and pick a siren and test date.</p>
+
+{% if not current_user.is_authenticated %}
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+  <strong>ARPSC Member?</strong> <a href="{{ url_for('members.login') }}">Log in</a> to link this signup to your account and auto-fill your info.
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
 
 <div class="row">
   <div class="col-md-8 col-lg-6">

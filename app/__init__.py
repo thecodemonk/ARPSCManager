@@ -2,12 +2,15 @@ import os
 import re
 
 from flask import Flask, send_from_directory, abort
+from werkzeug.middleware.proxy_fix import ProxyFix
 from .extensions import db, login_manager, csrf, limiter, migrate, oauth
 from .filters import register_filters
 
 
 def create_app(config_name=None):
     app = Flask(__name__)
+    # Trust proxy headers (ngrok, nginx) so url_for generates correct https URLs
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     if config_name == 'testing':
         app.config.from_object('app.config.TestConfig')
@@ -28,10 +31,12 @@ def create_app(config_name=None):
     from .auth import auth_bp
     from .public import public_bp
     from .admin import admin_bp
+    from .members import members_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(public_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(members_bp)
 
     os.makedirs(app.config['MEDIA_FOLDER'], exist_ok=True)
 

@@ -1,0 +1,220 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ member.name }} — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>{{ member.name }}{% if member.callsign %} ({{ member.callsign }}){% endif %}</h2>
+  <div>
+    <a href="{{ url_for('admin.member_edit', id=member.id) }}" class="btn btn-sm btn-primary">Edit</a>
+    <form method="post" action="{{ url_for('admin.member_toggle_active', id=member.id) }}" class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-sm btn-{{ 'warning' if member.active else 'success' }}">
+        {{ 'Deactivate' if member.active else 'Activate' }}
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header">Contact Info</div>
+      <div class="card-body">
+        <p><strong>Email:</strong> {{ member.email }}</p>
+        <p><strong>Phone:</strong> {{ member.phone or '—' }}{% if member.phone_privacy %} <span class="badge bg-secondary">Private</span>{% endif %}</p>
+        <p><strong>Address:</strong> {{ [member.street, member.city, member.state, member.zip_code]|select|join(', ') or '—' }}</p>
+        <p><strong>Emergency Contact:</strong> {{ member.emergency_contact or '—' }}</p>
+        <p><strong>Preferred Comm:</strong> {{ member.preferred_comm|title }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header">Status</div>
+      <div class="card-body">
+        <p><strong>Status:</strong>
+          {% if member.active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+        </p>
+        <p><strong>Interests:</strong>
+          {% if member.interest_skywarn %}SKYWARN{% endif %}
+          {% if member.interest_skywarn and member.interest_ares_auxcomm %}, {% endif %}
+          {% if member.interest_ares_auxcomm %}ARES / AUXCOMM{% endif %}
+          {% if not member.interest_skywarn and not member.interest_ares_auxcomm %}—{% endif %}
+        </p>
+        <p><strong>Background Check:</strong> {{ member.background_check|yesno }}</p>
+        <p><strong>MI Volunteer Registry:</strong> {{ member.mi_volunteer_registry|yesno }}</p>
+        <p><strong>Last Active:</strong> {{ member.last_active_date|format_date if member.last_active_date else '—' }}</p>
+        <p><strong>Total Hours:</strong> {{ '%.1f'|format(total_hours) }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if member.notes %}
+<div class="card mb-3">
+  <div class="card-header">Admin Notes</div>
+  <div class="card-body">{{ member.notes }}</div>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Equipment</span>
+    <a href="{{ url_for('admin.member_equipment', id=member.id) }}" class="btn btn-sm btn-outline-primary">Edit Equipment</a>
+  </div>
+  <div class="card-body">
+    {% if member.equipment_items %}
+    <div class="d-flex flex-wrap gap-2">
+      {% for item in member.equipment_items %}
+      <span class="badge bg-primary">{{ item.equipment_type.name }}{% if item.details %} ({{ item.details }}){% endif %}</span>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">No equipment listed. Click Edit Equipment to add some.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Training</span>
+    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#addTrainingAdmin">+ Add Training</button>
+  </div>
+  <div class="collapse" id="addTrainingAdmin">
+    <div class="card-body border-bottom">
+      <form method="post" action="{{ url_for('admin.member_training_add', id=member.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-2">
+          <div class="col-md-3">
+            <label class="form-label">Training Type</label>
+            <select name="training_type" class="form-select form-select-sm" id="admin-training-type">
+              {% for tt in training_types %}
+              <option value="{{ tt.name }}" data-exp-years="{{ tt.expiration_years or '' }}">{{ tt.name }}{% if tt.has_expiration %} ({{ tt.expiration_years }}yr){% endif %}</option>
+              {% endfor %}
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="col-md-2" id="admin-custom-type-group" style="display: none;">
+            <label class="form-label">Custom Name</label>
+            <input type="text" name="custom_type" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Completed</label>
+            <input type="date" name="completion_date" id="admin-completion-date" class="form-control form-control-sm" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Expires</label>
+            <input type="date" name="expiration_date" id="admin-expiration-date" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Certificate #</label>
+            <input type="text" name="certificate_number" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-12 mt-2">
+            <button type="submit" class="btn btn-primary btn-sm">Save Training</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if trainings %}
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Training</th><th>Completed</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for t in trainings %}
+        <tr>
+          <td>{{ t.training_type }}</td>
+          <td>{{ t.completion_date|format_date }}</td>
+          <td>{{ t.expiration_date|format_date if t.expiration_date else 'Never' }}</td>
+          <td>
+            {% if t.status == 'expired' %}<span class="badge bg-danger">Expired</span>
+            {% elif t.status == 'expiring_soon' %}<span class="badge bg-warning text-dark">Expiring</span>
+            {% else %}<span class="badge bg-success">Current</span>{% endif %}
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('admin.member_training_delete', id=member.id, training_id=t.id) }}"
+                  class="d-inline" onsubmit="return confirm('Remove this training record?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="p-3 text-muted mb-0">No training records.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function() {
+  var typeSelect = document.getElementById('admin-training-type');
+  var customGroup = document.getElementById('admin-custom-type-group');
+  var completionDate = document.getElementById('admin-completion-date');
+  var expirationDate = document.getElementById('admin-expiration-date');
+
+  function updateExpiration() {
+    var opt = typeSelect.options[typeSelect.selectedIndex];
+    var expYears = parseInt(opt.dataset.expYears);
+    customGroup.style.display = typeSelect.value === 'Other' ? '' : 'none';
+    if (expYears && completionDate.value) {
+      var d = new Date(completionDate.value + 'T00:00:00');
+      d.setFullYear(d.getFullYear() + expYears);
+      expirationDate.value = d.toISOString().split('T')[0];
+    }
+  }
+
+  typeSelect.addEventListener('change', updateExpiration);
+  completionDate.addEventListener('change', updateExpiration);
+})();
+</script>
+
+{% if levels %}
+<div class="card mb-3">
+  <div class="card-header">Task Books</div>
+  <div class="card-body">
+    {% for level in levels %}
+    {% set completed_count = 0 %}
+    {% for task in level.tasks %}
+      {% if task.id in progress_map and progress_map[task.id].completed_date %}
+        {% set completed_count = completed_count + 1 %}
+      {% endif %}
+    {% endfor %}
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span>{{ level.name }}: {{ completed_count }} / {{ level.tasks|length }} tasks</span>
+      <a href="{{ url_for('admin.taskbook_member', member_id=member.id, level_id=level.id) }}" class="btn btn-sm btn-outline-primary">Manage</a>
+    </div>
+    <div class="progress mb-3" style="height: 8px;">
+      <div class="progress-bar" style="width: {{ (completed_count / level.tasks|length * 100) if level.tasks else 0 }}%"></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-header">Recent Activity (last 50)</div>
+  <div class="card-body p-0">
+    {% if attendance %}
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Hours</th></tr></thead>
+      <tbody>
+        {% for att, event in attendance %}
+        <tr>
+          <td>{{ event.date|format_date }}</td>
+          <td>{{ event.event_type }}</td>
+          <td>{{ event.description or '' }}</td>
+          <td>{{ '%.1f'|format(att.hours) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="p-3 text-muted mb-0">No activity recorded.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

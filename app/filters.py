@@ -41,8 +41,19 @@ def status_badge(status):
     }.get(status, 'untested')
 
 
+def training_status_badge(training):
+    """Map training status to badge HTML."""
+    status = training.status
+    if status == 'expired':
+        return 'bg-danger'
+    elif status == 'expiring_soon':
+        return 'bg-warning text-dark'
+    return 'bg-success'
+
+
 def register_filters(app):
     app.jinja_env.filters['status_class'] = status_class
     app.jinja_env.filters['status_badge'] = status_badge
     app.jinja_env.filters['format_date'] = format_date
     app.jinja_env.filters['yesno'] = yesno
+    app.jinja_env.filters['training_status_badge'] = training_status_badge

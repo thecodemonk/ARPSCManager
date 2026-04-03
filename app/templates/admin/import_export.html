@@ -1,6 +1,6 @@
 {% extends "admin/layout.html" %}
 
-{% block title %}Import / Export — SirenTracker{% endblock %}
+{% block title %}Import / Export — ARPSC Manager{% endblock %}
 
 {% block admin_content %}
 <h2>Import / Export</h2>
@@ -9,11 +9,38 @@
   <div class="card-body">
     <h5 class="card-title">Export CSV</h5>
     <p>Download current data as CSV files.</p>
-    <div class="d-flex gap-2">
-      <a href="{{ url_for('admin.export_csv', table='sirens') }}" class="btn btn-outline-primary">Sirens</a>
-      <a href="{{ url_for('admin.export_csv', table='tests') }}" class="btn btn-outline-primary">Tests</a>
-      <a href="{{ url_for('admin.export_csv', table='assignments') }}" class="btn btn-outline-primary">Assignments</a>
-      <a href="{{ url_for('admin.export_csv', table='schedules') }}" class="btn btn-outline-primary">Schedules</a>
+
+    <h6 class="text-muted mt-3">Sirens</h6>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a href="{{ url_for('admin.export_csv', table='sirens') }}" class="btn btn-outline-primary btn-sm">Sirens</a>
+      <a href="{{ url_for('admin.export_csv', table='tests') }}" class="btn btn-outline-primary btn-sm">Tests</a>
+      <a href="{{ url_for('admin.export_csv', table='assignments') }}" class="btn btn-outline-primary btn-sm">Assignments</a>
+      <a href="{{ url_for('admin.export_csv', table='schedules') }}" class="btn btn-outline-primary btn-sm">Schedules</a>
+    </div>
+
+    <h6 class="text-muted">Members</h6>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a href="{{ url_for('admin.export_csv', table='members') }}" class="btn btn-outline-success btn-sm">Members</a>
+      <a href="{{ url_for('admin.export_csv', table='member_training') }}" class="btn btn-outline-success btn-sm">Member Training</a>
+      <a href="{{ url_for('admin.export_csv', table='member_equipment') }}" class="btn btn-outline-success btn-sm">Member Equipment</a>
+    </div>
+
+    <h6 class="text-muted">Events</h6>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a href="{{ url_for('admin.export_csv', table='events') }}" class="btn btn-outline-info btn-sm">Events</a>
+      <a href="{{ url_for('admin.export_csv', table='attendance') }}" class="btn btn-outline-info btn-sm">Attendance</a>
+    </div>
+
+    <h6 class="text-muted">Comm Logs</h6>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a href="{{ url_for('admin.export_csv', table='comm_logs') }}" class="btn btn-outline-warning btn-sm">Comm Log Headers</a>
+      <a href="{{ url_for('admin.export_csv', table='comm_log_entries') }}" class="btn btn-outline-warning btn-sm">Comm Log Entries</a>
+    </div>
+
+    <h6 class="text-muted">Configuration</h6>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('admin.export_csv', table='equipment_types') }}" class="btn btn-outline-secondary btn-sm">Equipment Types</a>
+      <a href="{{ url_for('admin.export_csv', table='training_types') }}" class="btn btn-outline-secondary btn-sm">Training Types</a>
     </div>
   </div>
 </div>
@@ -34,6 +61,18 @@
       </li>
       <li class="nav-item">
         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#import-schedules">Schedules</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#import-members">Members</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#import-events">Events</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#import-training">Training</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#import-attendance">Attendance</button>
       </li>
     </ul>
 
@@ -77,6 +116,54 @@
         <p>Columns: <code>test_date, test_time, description</code><br>
         Dates as <code>YYYY-MM-DD</code>. Duplicates (same date) are skipped.</p>
         <form method="post" action="{{ url_for('admin.import_csv', table='schedules') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <input type="file" name="file" class="form-control" accept=".csv" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Upload &amp; Preview</button>
+        </form>
+      </div>
+
+      <div class="tab-pane fade" id="import-members">
+        <p>Columns: <code>name, callsign, email, phone, city, state, interest_skywarn, interest_ares_auxcomm</code><br>
+        Email is required and used to match existing members (updates) or create new ones.</p>
+        <form method="post" action="{{ url_for('admin.import_csv', table='members') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <input type="file" name="file" class="form-control" accept=".csv" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Upload &amp; Preview</button>
+        </form>
+      </div>
+
+      <div class="tab-pane fade" id="import-events">
+        <p>Columns: <code>date, event_type, category, description, duration_hours, has_nts_liaison</code><br>
+        Dates as <code>YYYY-MM-DD</code>. Categories: <code>ARPSC</code>, <code>SKYWARN</code>, <code>Siren Test</code>.</p>
+        <form method="post" action="{{ url_for('admin.import_csv', table='events') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <input type="file" name="file" class="form-control" accept=".csv" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Upload &amp; Preview</button>
+        </form>
+      </div>
+
+      <div class="tab-pane fade" id="import-training">
+        <p>Columns: <code>member_email, training_type, completion_date, expiration_date, certificate_number, notes</code><br>
+        Member matched by email. Expiration auto-computed from training type config if not provided.</p>
+        <form method="post" action="{{ url_for('admin.import_csv', table='member_training') }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <input type="file" name="file" class="form-control" accept=".csv" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Upload &amp; Preview</button>
+        </form>
+      </div>
+
+      <div class="tab-pane fade" id="import-attendance">
+        <p>Columns: <code>event_date, event_type, member_email, member_name, member_callsign, hours</code><br>
+        Event matched by date + type. Member matched by email, then callsign, then name. Duplicates skipped.</p>
+        <form method="post" action="{{ url_for('admin.import_csv', table='attendance') }}" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">
             <input type="file" name="file" class="form-control" accept=".csv" required>

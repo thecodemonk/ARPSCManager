@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}My Training — ARPSC Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-10">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="mb-0">My Training Records</h2>
+      <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addTraining">
+        + Add Training
+      </button>
+    </div>
+
+    <div class="collapse mb-4" id="addTraining">
+      <div class="card">
+        <div class="card-body">
+          <form method="post" action="{{ url_for('members.training_add') }}">
+            {{ form.hidden_tag() }}
+            <div class="row g-3">
+              <div class="col-md-3">
+                {{ form.training_type.label(class="form-label") }}
+                {{ form.training_type(class="form-select", id="training-type-select") }}
+              </div>
+              <div class="col-md-3" id="custom-type-group" style="display: none;">
+                {{ form.custom_type.label(class="form-label") }}
+                {{ form.custom_type(class="form-control") }}
+              </div>
+              <div class="col-md-3">
+                {{ form.completion_date.label(class="form-label") }}
+                {{ form.completion_date(class="form-control", id="member-completion-date") }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Expires</label>
+                <input type="date" name="expiration_date" id="member-expiration-date" class="form-control">
+              </div>
+              <div class="col-md-3">
+                {{ form.certificate_number.label(class="form-label") }}
+                {{ form.certificate_number(class="form-control") }}
+              </div>
+              <div class="col-md-6">
+                {{ form.notes.label(class="form-label") }}
+                {{ form.notes(class="form-control", rows=1) }}
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">Save Training</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {% if trainings %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>Training</th>
+            <th>Completed</th>
+            <th>Expires</th>
+            <th>Status</th>
+            <th>Certificate</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in trainings %}
+          <tr>
+            <td>{{ t.training_type }}</td>
+            <td>{{ t.completion_date|format_date }}</td>
+            <td>{{ t.expiration_date|format_date if t.expiration_date else 'Never' }}</td>
+            <td>
+              {% if t.status == 'expired' %}
+              <span class="badge bg-danger">Expired</span>
+              {% elif t.status == 'expiring_soon' %}
+              <span class="badge bg-warning text-dark">Expiring Soon</span>
+              {% else %}
+              <span class="badge bg-success">Current</span>
+              {% endif %}
+            </td>
+            <td>{{ t.certificate_number or '' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('members.training_delete', id=t.id) }}"
+                    onsubmit="return confirm('Remove this training record?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No training records yet. Click "+ Add Training" to get started.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function() {
+  var expMap = {{ exp_map|tojson }};
+  var typeSelect = document.getElementById('training-type-select');
+  var completionDate = document.getElementById('member-completion-date');
+  var expirationDate = document.getElementById('member-expiration-date');
+  var customGroup = document.getElementById('custom-type-group');
+
+  function updateExpiration() {
+    var typeName = typeSelect.value;
+    customGroup.style.display = typeName === 'Other' ? '' : 'none';
+    var expYears = expMap[typeName];
+    if (expYears && completionDate.value) {
+      var d = new Date(completionDate.value + 'T00:00:00');
+      d.setFullYear(d.getFullYear() + expYears);
+      expirationDate.value = d.toISOString().split('T')[0];
+    }
+  }
+
+  typeSelect.addEventListener('change', updateExpiration);
+  completionDate.addEventListener('change', updateExpiration);
+})();
+</script>
+{% endblock %}

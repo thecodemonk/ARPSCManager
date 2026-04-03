@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}My Activity — ARPSC Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-10">
+    <h2 class="mb-4">My Activity</h2>
+
+    {% if records %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for attendance, event in records %}
+          <tr>
+            <td>{{ event.date|format_date }}</td>
+            <td>{{ event.category }}</td>
+            <td>{{ event.event_type }}</td>
+            <td>{{ event.description or '' }}</td>
+            <td>{{ '%.1f'|format(attendance.hours) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="table-dark">
+            <td colspan="4"><strong>Total Hours</strong></td>
+            <td><strong>{{ '%.1f'|format(records|map(attribute=0)|map(attribute='hours')|sum) }}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No activity recorded yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

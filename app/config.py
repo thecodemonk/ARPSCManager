@@ -32,6 +32,11 @@ class BaseConfig:
 
     TIMEZONE = 'America/New_York'
 
+    MAGIC_LINK_EXPIRY = 600  # 10 minutes
+    MAGIC_LINK_SALT = 'member-auth'
+    DOLLAR_VALUE_PER_HOUR = 34.79
+    INACTIVITY_THRESHOLD_DAYS = 365
+
 
 class DevConfig(BaseConfig):
     DEBUG = True

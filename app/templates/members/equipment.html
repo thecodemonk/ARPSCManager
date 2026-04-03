@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}My Equipment — ARPSC Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <h2 class="mb-4">My Equipment</h2>
+
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      {% if equipment_types %}
+      {% for et in equipment_types %}
+      {% set item = current_items.get(et.id) %}
+      <div class="form-check mb-2">
+        <input type="checkbox" name="equip_{{ et.id }}" class="form-check-input"
+               id="equip_{{ et.id }}" {% if item %}checked{% endif %}>
+        <label class="form-check-label" for="equip_{{ et.id }}">{{ et.name }}</label>
+      </div>
+      {% if et.has_details %}
+      <div class="mb-3 ms-4" style="max-width: 300px;">
+        <input type="text" name="details_{{ et.id }}" class="form-control form-control-sm"
+               placeholder="Details (e.g. wattage, duration)" value="{{ item.details if item else '' }}">
+      </div>
+      {% endif %}
+      {% endfor %}
+      {% else %}
+      <p class="text-muted">No equipment types configured yet.</p>
+      {% endif %}
+
+      <button type="submit" class="btn btn-primary mt-3">Save Equipment</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

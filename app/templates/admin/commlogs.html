@@ -1,0 +1,51 @@
+{% extends "admin/layout.html" %}
+{% block title %}Comm Logs — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>ICS-309 Comm Logs</h2>
+  <a href="{{ url_for('admin.commlog_add') }}" class="btn btn-primary btn-sm">+ New Comm Log</a>
+</div>
+
+{% if commlogs %}
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Incident</th>
+        <th>Op Period</th>
+        <th>Net / Position</th>
+        <th>Operator</th>
+        <th>Entries</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in commlogs %}
+      <tr>
+        <td>{{ log.incident_name }}{% if log.activation_number %} (#{{ log.activation_number }}){% endif %}</td>
+        <td>{{ log.op_period_start.strftime('%Y-%m-%d %H:%M') }} — {{ log.op_period_end.strftime('%H:%M') }}</td>
+        <td>{{ log.net_name_or_position or '' }}</td>
+        <td>{{ log.operator_name }}{% if log.operator_callsign %} ({{ log.operator_callsign }}){% endif %}</td>
+        <td>{{ log.entries|length }}</td>
+        <td>
+          <div class="btn-group btn-group-sm">
+            <a href="{{ url_for('admin.commlog_entries', id=log.id) }}" class="btn btn-outline-primary">Entries</a>
+            <a href="{{ url_for('admin.commlog_pdf', id=log.id) }}" class="btn btn-outline-success" target="_blank">PDF</a>
+            <a href="{{ url_for('admin.commlog_edit', id=log.id) }}" class="btn btn-outline-secondary">Edit</a>
+            <form method="post" action="{{ url_for('admin.commlog_delete', id=log.id) }}" class="d-inline"
+                  onsubmit="return confirm('Delete this comm log?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-outline-danger">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No comm logs yet.</p>
+{% endif %}
+{% endblock %}

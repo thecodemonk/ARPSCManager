@@ -4,10 +4,27 @@
 <div class="row">
   <div class="col-md-3 mb-3">
     <div class="list-group">
-      <a href="{{ url_for('admin.sirens') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.sirens' or request.endpoint == 'admin.siren_add' or request.endpoint == 'admin.siren_edit' %}active{% endif %}">Sirens</a>
-      <a href="{{ url_for('admin.tests') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.tests' or request.endpoint == 'admin.test_add' %}active{% endif %}">Tests</a>
-      <a href="{{ url_for('admin.assignments') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.assignments' %}active{% endif %}">Assignments</a>
+      <h6 class="list-group-item list-group-item-light fw-bold small text-uppercase">Sirens</h6>
+      <a href="{{ url_for('admin.sirens') }}" class="list-group-item list-group-item-action {% if request.endpoint in ('admin.sirens', 'admin.siren_add', 'admin.siren_edit') %}active{% endif %}">Sirens</a>
+      <a href="{{ url_for('admin.tests') }}" class="list-group-item list-group-item-action {% if request.endpoint in ('admin.tests', 'admin.test_add', 'admin.test_edit') %}active{% endif %}">Tests</a>
+      <a href="{{ url_for('admin.assignments') }}" class="list-group-item list-group-item-action {% if request.endpoint in ('admin.assignments', 'admin.assignment_add') %}active{% endif %}">Assignments</a>
       <a href="{{ url_for('admin.schedule') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.schedule' %}active{% endif %}">Schedule</a>
+
+      <h6 class="list-group-item list-group-item-light fw-bold small text-uppercase mt-2">Organization</h6>
+      <a href="{{ url_for('admin.members') }}" class="list-group-item list-group-item-action {% if request.endpoint in ('admin.members', 'admin.member_detail', 'admin.member_edit') %}active{% endif %}">Members</a>
+      <a href="{{ url_for('admin.events') }}" class="list-group-item list-group-item-action {% if request.endpoint in ('admin.events', 'admin.event_add', 'admin.event_edit', 'admin.event_attendance') %}active{% endif %}">Events</a>
+      <a href="{{ url_for('admin.commlogs') }}" class="list-group-item list-group-item-action {% if request.endpoint in ('admin.commlogs', 'admin.commlog_add', 'admin.commlog_edit', 'admin.commlog_entries') %}active{% endif %}">Comm Logs</a>
+      <a href="{{ url_for('admin.taskbooks') }}" class="list-group-item list-group-item-action {% if request.endpoint in ('admin.taskbooks', 'admin.taskbook_add', 'admin.taskbook_edit', 'admin.taskbook_member') %}active{% endif %}">Task Books</a>
+
+      <h6 class="list-group-item list-group-item-light fw-bold small text-uppercase mt-2">Reports</h6>
+      <a href="{{ url_for('admin.reports') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.reports' %}active{% endif %}">Monthly Report</a>
+      <a href="{{ url_for('admin.members_inactive') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.members_inactive' %}active{% endif %}">Inactive Members</a>
+
+      <h6 class="list-group-item list-group-item-light fw-bold small text-uppercase mt-2">Configuration</h6>
+      <a href="{{ url_for('admin.config_equipment_types') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.config_equipment_types' %}active{% endif %}">Equipment Types</a>
+      <a href="{{ url_for('admin.config_training_types') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.config_training_types' %}active{% endif %}">Training Types</a>
+
+      <h6 class="list-group-item list-group-item-light fw-bold small text-uppercase mt-2">Data</h6>
       <a href="{{ url_for('admin.import_export') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.import_export' %}active{% endif %}">Import / Export</a>
     </div>
   </div>

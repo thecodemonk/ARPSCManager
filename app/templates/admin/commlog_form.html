@@ -1,0 +1,65 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ 'Edit Comm Log' if commlog else 'New Comm Log' }} — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<h2 class="mb-4">{{ 'Edit Comm Log' if commlog else 'New ICS-309 Comm Log' }}</h2>
+
+<form method="post">
+  {{ form.hidden_tag() }}
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      {{ form.incident_name.label(class="form-label") }}
+      {{ form.incident_name(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      {{ form.activation_number.label(class="form-label") }}
+      {{ form.activation_number(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      {{ form.event_id.label(class="form-label") }}
+      {{ form.event_id(class="form-select") }}
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      {{ form.op_period_start.label(class="form-label") }}
+      {{ form.op_period_start(class="form-control", type="datetime-local") }}
+    </div>
+    <div class="col-md-6">
+      {{ form.op_period_end.label(class="form-label") }}
+      {{ form.op_period_end(class="form-control", type="datetime-local") }}
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-4">
+      {{ form.net_name_or_position.label(class="form-label") }}
+      {{ form.net_name_or_position(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.operator_name.label(class="form-label") }}
+      {{ form.operator_name(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.operator_callsign.label(class="form-label") }}
+      {{ form.operator_callsign(class="form-control") }}
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      {{ form.prepared_by.label(class="form-label") }}
+      {{ form.prepared_by(class="form-control") }}
+    </div>
+    <div class="col-md-6">
+      {{ form.prepared_date.label(class="form-label") }}
+      {{ form.prepared_date(class="form-control") }}
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">{{ 'Save' if commlog else 'Create Comm Log' }}</button>
+  <a href="{{ url_for('admin.commlogs') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

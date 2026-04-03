@@ -4,10 +4,11 @@ from itertools import groupby
 
 import requests as http_requests
 from flask import render_template, request, flash, redirect, url_for, current_app
+from flask_login import current_user
 from . import public_bp
 from .forms import SignupForm
 from ..extensions import db, limiter
-from ..models import Siren, Test, Assignment, TestSchedule
+from ..models import Siren, Test, Assignment, TestSchedule, Member
 from ..utils import get_all_siren_statuses, get_siren_status, notify_admins
 
 
@@ -77,8 +78,14 @@ def signup():
     ]
 
     # Pre-select siren from query param
-    if request.method == 'GET' and request.args.get('siren'):
-        form.siren_id.data = request.args.get('siren', type=int)
+    if request.method == 'GET':
+        if request.args.get('siren'):
+            form.siren_id.data = request.args.get('siren', type=int)
+        # Pre-fill volunteer name for logged-in members
+        if current_user.is_authenticated and isinstance(current_user, Member):
+            if not form.volunteer_name.data:
+                display = current_user.callsign or current_user.name
+                form.volunteer_name.data = display
 
     if form.validate_on_submit():
         # Honeypot check
@@ -113,11 +120,17 @@ def signup():
             flash('This siren is already claimed for that test date. Please pick another.', 'warning')
             return render_template('public/signup.html', form=form)
 
+        # Link to member account if logged in
+        member_id = None
+        if current_user.is_authenticated and isinstance(current_user, Member):
+            member_id = current_user.id
+
         assignment = Assignment(
             siren_id=siren_id,
             volunteer_name=form.volunteer_name.data.strip(),
             test_date=test_date_val,
             status='CLAIMED',
+            member_id=member_id,
         )
         db.session.add(assignment)
         db.session.commit()

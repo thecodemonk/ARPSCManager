@@ -1,0 +1,71 @@
+{% extends "admin/layout.html" %}
+{% block title %}Members — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Members</h2>
+  {% if admin_emails_without_member %}
+  <form method="post" action="{{ url_for('admin.members_add_admins') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-sm btn-outline-primary"
+            onclick="return confirm('Create member records for {{ admin_emails_without_member|length }} admin account(s)?')">
+      + Add Admin Accounts as Members ({{ admin_emails_without_member|length }})
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-auto">
+    <input type="text" name="q" class="form-control form-control-sm" placeholder="Search name, callsign, email..." value="{{ search }}">
+  </div>
+  <div class="col-auto">
+    <select name="active" class="form-select form-select-sm">
+      <option value="">All</option>
+      <option value="1" {% if filter_active == '1' %}selected{% endif %}>Active</option>
+      <option value="0" {% if filter_active == '0' %}selected{% endif %}>Inactive</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+    <a href="{{ url_for('admin.members') }}" class="btn btn-sm btn-secondary">Clear</a>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Name</th>
+        <th>Callsign</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Interests</th>
+        <th>Last Active</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in members %}
+      <tr class="cursor-pointer" onclick="window.location='{{ url_for('admin.member_detail', id=m.id) }}'">
+        <td>{{ m.name }}</td>
+        <td>{{ m.callsign or '' }}</td>
+        <td>{{ m.email }}</td>
+        <td>
+          {% if m.active %}
+          <span class="badge bg-success">Active</span>
+          {% else %}
+          <span class="badge bg-secondary">Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if m.interest_skywarn %}<span class="badge bg-info text-dark">SKYWARN</span>{% endif %}
+          {% if m.interest_ares_auxcomm %}<span class="badge bg-primary">ARES</span>{% endif %}
+        </td>
+        <td>{{ m.last_active_date|format_date if m.last_active_date else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="text-muted">{{ members|length }} member{{ 's' if members|length != 1 }}</p>
+{% endblock %}

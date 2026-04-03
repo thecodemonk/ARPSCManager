@@ -1,0 +1,71 @@
+{% extends "admin/layout.html" %}
+{% block title %}Events — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Events</h2>
+  <a href="{{ url_for('admin.event_add') }}" class="btn btn-primary btn-sm">+ New Event</a>
+</div>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-auto">
+    <select name="category" class="form-select form-select-sm">
+      <option value="">All Categories</option>
+      {% for c in ['ARPSC', 'SKYWARN', 'Siren Test'] %}
+      <option value="{{ c }}" {% if filter_category == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <select name="type" class="form-select form-select-sm">
+      <option value="">All Types</option>
+      {% for t in ['Meeting', 'Net', 'Info Net', 'Simplex Net', 'Training', 'Exercise', 'Public Service Event', 'Public Safety Incident', 'SKYWARN Activation', 'Deployment', 'Siren Test', 'General/Misc'] %}
+      <option value="{{ t }}" {% if filter_type == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+    <a href="{{ url_for('admin.events') }}" class="btn btn-sm btn-secondary">Clear</a>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Date</th>
+        <th>Category</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Participants</th>
+        <th>Person-Hours</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in events %}
+      <tr>
+        <td>{{ e.date|format_date }}</td>
+        <td>{{ e.category }}</td>
+        <td>{{ e.event_type }}</td>
+        <td>{{ e.description or '' }}</td>
+        <td>{{ e.participant_count }}</td>
+        <td>{{ '%.1f'|format(e.total_person_hours) }}</td>
+        <td>
+          <div class="btn-group btn-group-sm">
+            <a href="{{ url_for('admin.event_attendance', id=e.id) }}" class="btn btn-outline-primary">Attendance</a>
+            <a href="{{ url_for('admin.event_edit', id=e.id) }}" class="btn btn-outline-secondary">Edit</a>
+            <form method="post" action="{{ url_for('admin.event_delete', id=e.id) }}" class="d-inline"
+                  onsubmit="return confirm('Delete this event?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-outline-danger">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

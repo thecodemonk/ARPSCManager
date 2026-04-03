@@ -1,4 +1,4 @@
-/* SirenTracker client-side JS */
+/* ARPSC Manager client-side JS */
 
 document.addEventListener('DOMContentLoaded', function () {
   // Text filter for siren table
@@ -69,5 +69,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (link) window.location = link.href;
       });
     });
+  }
+
+  // Training form: show/hide custom type field
+  var trainingTypeSelect = document.getElementById('training-type-select');
+  var customTypeGroup = document.getElementById('custom-type-group');
+  if (trainingTypeSelect && customTypeGroup) {
+    function toggleCustomType() {
+      customTypeGroup.style.display = trainingTypeSelect.value === 'Other' ? '' : 'none';
+    }
+    trainingTypeSelect.addEventListener('change', toggleCustomType);
+    toggleCustomType();
   }
 });

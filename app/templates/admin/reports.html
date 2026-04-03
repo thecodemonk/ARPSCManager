@@ -1,0 +1,110 @@
+{% extends "admin/layout.html" %}
+{% block title %}Monthly Report — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Monthly State Report</h2>
+  <a href="{{ url_for('admin.reports_export', year=year, month=month) }}" class="btn btn-success btn-sm">Export CSV</a>
+</div>
+
+<form class="row g-2 mb-4" method="get">
+  <div class="col-auto">
+    <select name="month" class="form-select form-select-sm">
+      {% for m in range(1, 13) %}
+      <option value="{{ m }}" {% if month == m %}selected{% endif %}>
+        {{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1] }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <input type="number" name="year" class="form-control form-control-sm" value="{{ year }}" min="2020" max="2099" style="width: 100px;">
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-sm btn-primary">View</button>
+  </div>
+</form>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Summary</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Category</th><th>Count</th><th>Person-Hours</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Drills</td>
+            <td>{{ report.drills_count }}</td>
+            <td>{{ '%.1f'|format(report.drills_hours) }}</td>
+          </tr>
+          <tr>
+            <td>Public Service Events</td>
+            <td>{{ report.public_service_count }}</td>
+            <td>{{ '%.1f'|format(report.public_service_hours) }}</td>
+          </tr>
+          <tr>
+            <td>Public Safety Incidents</td>
+            <td>{{ report.public_safety_count }}</td>
+            <td>{{ '%.1f'|format(report.public_safety_hours) }}</td>
+          </tr>
+          <tr>
+            <td>SKYWARN Activations</td>
+            <td>{{ report.skywarn_count }}</td>
+            <td>{{ '%.1f'|format(report.skywarn_hours) }}</td>
+          </tr>
+          <tr class="table-dark">
+            <td><strong>Total Public Safety</strong></td>
+            <td><strong>{{ report.total_public_safety_count }}</strong></td>
+            <td><strong>{{ '%.1f'|format(report.total_public_safety_hours) }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Totals</div>
+      <div class="card-body">
+        <p><strong>Active ARES Members:</strong> {{ report.active_members }}</p>
+        <p><strong>Nets with NTS Liaison:</strong> {{ report.nets_with_nts_liaison }}</p>
+        <p><strong>Total Person-Hours:</strong> {{ '%.1f'|format(report.total_person_hours) }}</p>
+        <p><strong>Dollar Value:</strong> ${{ '%.2f'|format(report.dollar_value) }}
+          <small class="text-muted">@ ${{ '%.2f'|format(report.dollar_rate) }}/hr</small>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if report.events %}
+<h4>Events Detail</h4>
+<div class="table-responsive">
+  <table class="table table-sm table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Date</th>
+        <th>Category</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Participants</th>
+        <th>Person-Hours</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in report.events %}
+      <tr>
+        <td>{{ e.date|format_date }}</td>
+        <td>{{ e.category }}</td>
+        <td>{{ e.event_type }}</td>
+        <td>{{ e.description or '' }}</td>
+        <td>{{ e.participant_count }}</td>
+        <td>{{ '%.1f'|format(e.total_person_hours) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No events recorded for this month.</p>
+{% endif %}
+{% endblock %}

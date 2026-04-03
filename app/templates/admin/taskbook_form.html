@@ -1,0 +1,102 @@
+{% extends "admin/layout.html" %}
+{% block title %}{{ 'Edit ' + level.name if level else 'New Task Book Level' }} — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<h2 class="mb-4">{{ 'Edit Task Book Level' if level else 'New Task Book Level' }}</h2>
+
+<form method="post">
+  {{ form.hidden_tag() }}
+  <input type="hidden" name="action" value="update_level">
+
+  <div class="row mb-3">
+    <div class="col-md-6">
+      {{ form.name.label(class="form-label") }}
+      {{ form.name(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      {{ form.display_order.label(class="form-label") }}
+      {{ form.display_order(class="form-control") }}
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {{ form.description.label(class="form-label") }}
+    {{ form.description(class="form-control", rows=2) }}
+  </div>
+
+  <button type="submit" class="btn btn-primary">{{ 'Save Level' if level else 'Create Level' }}</button>
+  <a href="{{ url_for('admin.taskbooks') }}" class="btn btn-secondary">Back</a>
+</form>
+
+{% if level %}
+<hr>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4>Tasks</h4>
+  <form method="post" action="{{ url_for('admin.taskbook_import', id=level.id) }}" enctype="multipart/form-data" class="d-inline">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="input-group input-group-sm" style="width: 350px;">
+      <input type="file" name="file" accept=".csv" class="form-control form-control-sm" required>
+      <button type="submit" class="btn btn-outline-primary">Import CSV</button>
+    </div>
+  </form>
+</div>
+
+{% if tasks %}
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead class="table-dark">
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for task in tasks %}
+      <tr>
+        <td>{{ task.display_order }}</td>
+        <td>{{ task.name }}</td>
+        <td>{{ task.description or '' }}</td>
+        <td>
+          <form method="post" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="delete_task">
+            <input type="hidden" name="task_id" value="{{ task.id }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger"
+                    onclick="return confirm('Remove this task?')">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">No tasks yet. Add tasks below or import from CSV.</p>
+{% endif %}
+
+<div class="card mt-3">
+  <div class="card-header">Add Task</div>
+  <div class="card-body">
+    <form method="post">
+      {{ task_form.hidden_tag() }}
+      <input type="hidden" name="action" value="add_task">
+      <div class="row g-2">
+        <div class="col-md-4">
+          {{ task_form.name.label(class="form-label") }}
+          {{ task_form.name(class="form-control form-control-sm") }}
+        </div>
+        <div class="col-md-6">
+          {{ task_form.description.label(class="form-label") }}
+          {{ task_form.description(class="form-control form-control-sm", rows=1) }}
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary btn-sm w-100">Add Task</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

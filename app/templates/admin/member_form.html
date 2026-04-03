@@ -1,0 +1,80 @@
+{% extends "admin/layout.html" %}
+{% block title %}Edit {{ member.name }} — ARPSC Manager{% endblock %}
+
+{% block admin_content %}
+<h2 class="mb-4">Edit Member</h2>
+
+<form method="post">
+  {{ form.hidden_tag() }}
+
+  <div class="row mb-3">
+    <div class="col-md-4">
+      {{ form.name.label(class="form-label") }}
+      {{ form.name(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.callsign.label(class="form-label") }}
+      {{ form.callsign(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.email.label(class="form-label") }}
+      {{ form.email(class="form-control") }}
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-4">
+      {{ form.phone.label(class="form-label") }}
+      {{ form.phone(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.emergency_contact.label(class="form-label") }}
+      {{ form.emergency_contact(class="form-control") }}
+    </div>
+    <div class="col-md-4">
+      {{ form.preferred_comm.label(class="form-label") }}
+      {{ form.preferred_comm(class="form-select") }}
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-4">
+      {{ form.street.label(class="form-label") }}
+      {{ form.street(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      {{ form.city.label(class="form-label") }}
+      {{ form.city(class="form-control") }}
+    </div>
+    <div class="col-md-2">
+      {{ form.state.label(class="form-label") }}
+      {{ form.state(class="form-control") }}
+    </div>
+    <div class="col-md-3">
+      {{ form.zip_code.label(class="form-label") }}
+      {{ form.zip_code(class="form-control") }}
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <div class="form-check">{{ form.phone_privacy(class="form-check-input") }} {{ form.phone_privacy.label(class="form-check-label") }}</div>
+      <div class="form-check">{{ form.interest_skywarn(class="form-check-input") }} {{ form.interest_skywarn.label(class="form-check-label") }}</div>
+      <div class="form-check">{{ form.interest_ares_auxcomm(class="form-check-input") }} {{ form.interest_ares_auxcomm.label(class="form-check-label") }}</div>
+    </div>
+    <div class="col-md-3">
+      <div class="form-check">{{ form.background_check(class="form-check-input") }} {{ form.background_check.label(class="form-check-label") }}</div>
+      <div class="form-check">{{ form.mi_volunteer_registry(class="form-check-input") }} {{ form.mi_volunteer_registry.label(class="form-check-label") }}</div>
+      <div class="form-check">{{ form.active(class="form-check-input") }} {{ form.active.label(class="form-check-label") }}</div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {{ form.notes.label(class="form-label") }}
+    {{ form.notes(class="form-control", rows=3) }}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Save</button>
+  <a href="{{ url_for('admin.member_detail', id=member.id) }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

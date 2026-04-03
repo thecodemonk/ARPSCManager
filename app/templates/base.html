@@ -3,33 +3,62 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}SirenTracker{% endblock %}</title>
+  <title>{% block title %}ARPSC Manager{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
 </head>
 <body>
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand" href="{{ url_for('public.dashboard') }}">SirenTracker</a>
+      <a class="navbar-brand" href="{{ url_for('public.dashboard') }}">ARPSC Manager</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('public.dashboard') }}">Dashboard</a>
+            <a class="nav-link" href="{{ url_for('public.dashboard') }}">Siren Dashboard</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('public.signup') }}">Volunteer</a>
           </li>
-          {% if current_user.is_authenticated %}
+
+          {% if current_user.is_authenticated and current_user.__class__.__name__ == 'Member' %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">My Account</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{{ url_for('members.profile') }}">My Profile</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('members.equipment') }}">My Equipment</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('members.training') }}">My Training</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('members.taskbooks') }}">My Task Books</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('members.activity') }}">My Activity</a></li>
+            </ul>
+          </li>
+          {% endif %}
+
+          {% if current_user.is_authenticated and current_user.__class__.__name__ == 'AdminUser' %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Admin</a>
             <ul class="dropdown-menu">
+              <li><h6 class="dropdown-header">Sirens</h6></li>
               <li><a class="dropdown-item" href="{{ url_for('admin.sirens') }}">Sirens</a></li>
               <li><a class="dropdown-item" href="{{ url_for('admin.tests') }}">Tests</a></li>
               <li><a class="dropdown-item" href="{{ url_for('admin.assignments') }}">Assignments</a></li>
               <li><a class="dropdown-item" href="{{ url_for('admin.schedule') }}">Schedule</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><h6 class="dropdown-header">Organization</h6></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin.members') }}">Members</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin.events') }}">Events</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin.commlogs') }}">Comm Logs</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin.taskbooks') }}">Task Books</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><h6 class="dropdown-header">Reports</h6></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin.reports') }}">Monthly Report</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin.members_inactive') }}">Inactive Members</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><h6 class="dropdown-header">Configuration</h6></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin.config_equipment_types') }}">Equipment Types</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('admin.config_training_types') }}">Training Types</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="{{ url_for('admin.import_export') }}">Import / Export</a></li>
             </ul>
@@ -39,15 +68,25 @@
         <ul class="navbar-nav">
           {% if current_user.is_authenticated %}
           <li class="nav-item">
-            <span class="nav-link text-light">{{ current_user.display_name }}</span>
+            <span class="nav-link text-light">{{ current_user.display_name if current_user.__class__.__name__ == 'AdminUser' else current_user.name }}</span>
           </li>
           <li class="nav-item">
+            {% if current_user.__class__.__name__ == 'AdminUser' %}
             <form method="post" action="{{ url_for('auth.logout') }}" class="d-inline">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="nav-link btn btn-link">Logout</button>
             </form>
+            {% else %}
+            <form method="post" action="{{ url_for('members.logout') }}" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="nav-link btn btn-link">Logout</button>
+            </form>
+            {% endif %}
           </li>
           {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('members.login') }}">Member Login</a>
+          </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('auth.login') }}">Admin Login</a>
           </li>
@@ -73,7 +112,7 @@
   </main>
 
   <footer class="container mt-5 mb-3 text-center text-muted">
-    <small>&copy; {{ now().year if now is defined else "2026" }} SirenTracker</small>
+    <small>&copy; {{ now().year if now is defined else "2026" }} SCC ARPSC</small>
   </footer>
 
   <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
