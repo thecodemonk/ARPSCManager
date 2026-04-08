@@ -69,16 +69,21 @@
 
       <div class="mb-3">
         <label class="form-label">Interests</label>
-        <div class="d-flex gap-4">
+        <div class="d-flex flex-wrap gap-4">
+          <div class="form-check">
+            {{ form.interest_ares_auxcomm(class="form-check-input") }}
+            {{ form.interest_ares_auxcomm.label(class="form-check-label") }}
+          </div>
           <div class="form-check">
             {{ form.interest_skywarn(class="form-check-input") }}
             {{ form.interest_skywarn.label(class="form-check-label") }}
           </div>
           <div class="form-check">
-            {{ form.interest_ares_auxcomm(class="form-check-input") }}
-            {{ form.interest_ares_auxcomm.label(class="form-check-label") }}
+            {{ form.interest_siren_testing(class="form-check-input") }}
+            {{ form.interest_siren_testing.label(class="form-check-label") }}
           </div>
         </div>
+        <div class="form-text">Check any programs you'd like to participate in. An admin will activate your membership after verifying eligibility.</div>
       </div>
 
       <button type="submit" class="btn btn-primary">Create Account</button>

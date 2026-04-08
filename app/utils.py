@@ -163,7 +163,10 @@ def _fix_orientation(img):
 
 
 def get_inactive_members(threshold_days=365):
-    """Return active members with no event attendance in the last threshold_days."""
+    """Return members who are admin-active in at least one program but have
+    had no event attendance in the last threshold_days. Pending registrations
+    (members with interests checked but no admin approval yet) are excluded
+    so they aren't mistakenly flagged as 'inactive' on day one."""
     from .models import Member, EventAttendance, Event
     cutoff = date.today() - timedelta(days=threshold_days)
 
@@ -178,8 +181,62 @@ def get_inactive_members(threshold_days=365):
 
     return Member.query.filter(
         Member.active == True,
+        db.or_(
+            Member.arpsc_active == True,
+            Member.skywarn_active == True,
+            Member.siren_testing_active == True,
+        ),
         ~Member.id.in_(db.select(active_member_ids.c.member_id))
     ).order_by(Member.name).all()
+
+
+def add_years(d, years):
+    """Add `years` to a date, clamping Feb 29 to Feb 28 in non-leap result years.
+    Plain `d.replace(year=d.year + years)` raises ValueError on that case, which
+    bites training-record expiration math when someone completes training on a
+    leap day."""
+    try:
+        return d.replace(year=d.year + years)
+    except ValueError:
+        return d.replace(year=d.year + years, day=28)
+
+
+def stamp_program_audit_dates(member, prior_state):
+    """Stamp arpsc/skywarn/siren_testing activation+deactivation dates and
+    archived_at based on transitions from prior_state to member's current
+    field values. Caller is responsible for committing.
+
+    `prior_state` is a dict with keys 'arpsc', 'skywarn', 'siren_testing',
+    'active' holding the booleans that were set BEFORE the form populated
+    the member. Without this snapshot, historical state reports go wrong
+    after the very first toggle."""
+    today = date.today()
+    for prog in ('arpsc', 'skywarn', 'siren_testing'):
+        now_active = getattr(member, f'{prog}_active')
+        was_active = prior_state.get(prog)
+        if now_active and not was_active:
+            setattr(member, f'{prog}_activated_at', today)
+            setattr(member, f'{prog}_deactivated_at', None)
+        elif (not now_active) and was_active:
+            setattr(member, f'{prog}_deactivated_at', today)
+    # Overall record archive flag
+    was_active = prior_state.get('active')
+    if member.active and not was_active:
+        member.archived_at = None
+    elif (not member.active) and was_active:
+        member.archived_at = today
+
+
+def snapshot_member_program_state(member):
+    """Capture the current program-active and archive booleans on a member.
+    Companion to stamp_program_audit_dates — call this before populating the
+    form/CSV row, then pass the result back to stamp_ after."""
+    return {
+        'arpsc': member.arpsc_active,
+        'skywarn': member.skywarn_active,
+        'siren_testing': member.siren_testing_active,
+        'active': member.active,
+    }
 
 
 def generate_first_mondays(year):

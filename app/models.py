@@ -115,11 +115,26 @@ class Member(db.Model, UserMixin):
     emergency_contact = db.Column(db.Text)
     preferred_comm = db.Column(db.Text, default='email')  # call, text, email
     phone_privacy = db.Column(db.Boolean, default=True)
+    # Member-controlled program interests (self-service via profile)
     interest_skywarn = db.Column(db.Boolean, default=False)
     interest_ares_auxcomm = db.Column(db.Boolean, default=False)
+    interest_siren_testing = db.Column(db.Boolean, default=False)
+    # Admin-controlled program active flags — gate state report counts and pickers
+    arpsc_active = db.Column(db.Boolean, default=False)
+    skywarn_active = db.Column(db.Boolean, default=False)
+    siren_testing_active = db.Column(db.Boolean, default=False)
+    # Audit timestamps so historical state reports remain accurate after toggles
+    arpsc_activated_at = db.Column(db.Date)
+    arpsc_deactivated_at = db.Column(db.Date)
+    skywarn_activated_at = db.Column(db.Date)
+    skywarn_deactivated_at = db.Column(db.Date)
+    siren_testing_activated_at = db.Column(db.Date)
+    siren_testing_deactivated_at = db.Column(db.Date)
     background_check = db.Column(db.Boolean, default=False)
     mi_volunteer_registry = db.Column(db.Boolean, default=False)
+    # Overall record status — False means archived (left org / deceased)
     active = db.Column(db.Boolean, default=True)
+    archived_at = db.Column(db.Date)
     last_active_date = db.Column(db.Date)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -365,13 +380,12 @@ class CommLogEntry(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
+    """Sessions store IDs as 'admin:N' or 'member:N'. AdminUser.get_id() and
+    Member.get_id() always emit one of those prefixes, so any other value
+    means a stale or tampered cookie — return None to force re-auth."""
     user_id = str(user_id)
     if user_id.startswith('admin:'):
         return db.session.get(AdminUser, int(user_id.split(':')[1]))
-    elif user_id.startswith('member:'):
+    if user_id.startswith('member:'):
         return db.session.get(Member, int(user_id.split(':')[1]))
-    # Legacy fallback for existing admin sessions (bare integer)
-    try:
-        return db.session.get(AdminUser, int(user_id))
-    except (ValueError, TypeError):
-        return None
+    return None

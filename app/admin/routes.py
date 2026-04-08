@@ -411,12 +411,41 @@ def members():
         query = query.filter(
             db.or_(Member.name.ilike(like), Member.callsign.ilike(like), Member.email.ilike(like))
         )
-    filter_active = request.args.get('active')
-    if filter_active == '1':
-        query = query.filter(Member.active == True)
-    elif filter_active == '0':
+    # Program filter — narrows by *_active flag (admin gate), not by interest
+    filter_program = request.args.get('program', '')
+    if filter_program == 'arpsc':
+        query = query.filter(Member.arpsc_active == True, Member.active == True)
+    elif filter_program == 'skywarn':
+        query = query.filter(Member.skywarn_active == True, Member.active == True)
+    elif filter_program == 'siren_testing':
+        query = query.filter(Member.siren_testing_active == True, Member.active == True)
+    elif filter_program == 'archived':
         query = query.filter(Member.active == False)
+    elif filter_program == 'pending':
+        # Members with at least one interest checked but no admin-active flag
+        query = query.filter(
+            Member.active == True,
+            Member.arpsc_active == False,
+            Member.skywarn_active == False,
+            Member.siren_testing_active == False,
+            db.or_(
+                Member.interest_skywarn == True,
+                Member.interest_ares_auxcomm == True,
+                Member.interest_siren_testing == True,
+            ),
+        )
+    else:
+        # Default view excludes archived members
+        query = query.filter(Member.active == True)
     all_members = query.order_by(Member.name).all()
+
+    # Stats strip — totals across the whole org regardless of current filter
+    stats = {
+        'arpsc': Member.query.filter_by(active=True, arpsc_active=True).count(),
+        'skywarn': Member.query.filter_by(active=True, skywarn_active=True).count(),
+        'siren_testing': Member.query.filter_by(active=True, siren_testing_active=True).count(),
+        'archived': Member.query.filter_by(active=False).count(),
+    }
 
     # Find admin accounts that don't have a matching member record
     member_emails = {m.email.lower() for m in Member.query.with_entities(Member.email).all()}
@@ -426,7 +455,7 @@ def members():
     ]
 
     return render_template('admin/members_list.html', members=all_members,
-                           search=search, filter_active=filter_active,
+                           search=search, filter_program=filter_program, stats=stats,
                            admin_emails_without_member=admin_emails_without_member)
 
 
@@ -508,7 +537,10 @@ def member_edit(id):
     member = db.session.get(Member, id) or abort(404)
     form = MemberAdminForm(obj=member)
     if form.validate_on_submit():
+        from ..utils import snapshot_member_program_state, stamp_program_audit_dates
+        prior = snapshot_member_program_state(member)
         form.populate_obj(member)
+        stamp_program_audit_dates(member, prior)
         db.session.commit()
         flash(f'Member {member.name} updated.', 'success')
         return redirect(url_for('admin.member_detail', id=id))
@@ -518,11 +550,15 @@ def member_edit(id):
 @admin_bp.route('/members/<int:id>/toggle-active', methods=['POST'])
 @admin_required
 def member_toggle_active(id):
+    """Archive or restore a member. Archiving = active=False + stamp archived_at.
+    The member stays in past attendance/reports but disappears from pickers and
+    current state-report counts."""
     member = db.session.get(Member, id) or abort(404)
     member.active = not member.active
+    member.archived_at = date.today() if not member.active else None
     db.session.commit()
-    status = 'active' if member.active else 'inactive'
-    flash(f'{member.name} marked as {status}.', 'info')
+    status = 'restored' if member.active else 'archived'
+    flash(f'{member.name} {status}.', 'info')
     return redirect(url_for('admin.member_detail', id=id))
 
 
@@ -579,7 +615,8 @@ def member_training_add(id):
     if not expiration_date:
         tt = TrainingType.query.filter_by(name=training_type).first()
         if tt and tt.has_expiration and tt.expiration_years:
-            expiration_date = completion_date_val.replace(year=completion_date_val.year + tt.expiration_years)
+            from ..utils import add_years
+            expiration_date = add_years(completion_date_val, tt.expiration_years)
 
     training = MemberTraining(
         member_id=member.id,
@@ -673,14 +710,28 @@ def event_delete(id):
 @admin_required
 def event_attendance(id):
     event = db.session.get(Event, id) or abort(404)
-    all_members = Member.query.filter_by(active=True).order_by(Member.name).all()
+
+    # Default the picker to members active in this event's program. The "all"
+    # toggle is for edge cases (e.g. an ARPSC member helping at a Skywarn net).
+    # POST always pulls from "all" so existing attendance for cross-program
+    # helpers isn't accidentally wiped on save.
+    show_all = request.args.get('all') == '1'
+    base_query = Member.query.filter_by(active=True)
+    program_query = base_query
+    if event.category == 'SKYWARN':
+        program_query = base_query.filter(Member.skywarn_active == True)
+    elif event.category == 'ARPSC':
+        program_query = base_query.filter(Member.arpsc_active == True)
+    elif event.category == 'Siren Test':
+        program_query = base_query.filter(Member.siren_testing_active == True)
+
+    # On POST we operate over every active member so an admin showing the
+    # filtered view can't accidentally drop attendees from outside the program.
+    post_members = base_query.order_by(Member.name).all()
 
     if request.method == 'POST':
-        # Process attendance form
-        # First, remove all existing attendance for this event
         EventAttendance.query.filter_by(event_id=event.id).delete()
-
-        for member in all_members:
+        for member in post_members:
             checkbox_key = f'member_{member.id}'
             hours_key = f'hours_{member.id}'
             if checkbox_key in request.form:
@@ -691,19 +742,29 @@ def event_attendance(id):
                     hours=hours or event.duration_hours,
                 )
                 db.session.add(att)
-                # Update member last active date
                 if not member.last_active_date or member.last_active_date < event.date:
                     member.last_active_date = event.date
-
         db.session.commit()
         flash('Attendance updated.', 'success')
         return redirect(url_for('admin.event_attendance', id=event.id))
 
-    # Build set of currently attending member IDs
+    # Build the GET picker. Always include members already attending this event,
+    # even if they're outside the program filter — otherwise the admin would
+    # see them disappear and unintentionally drop them on save.
     current_attendance = {a.member_id: a for a in event.attendance}
+    if show_all:
+        members = post_members
+    else:
+        members = program_query.order_by(Member.name).all()
+        member_ids = {m.id for m in members}
+        for m in post_members:
+            if m.id in current_attendance and m.id not in member_ids:
+                members.append(m)
+        members.sort(key=lambda m: m.name)
 
     return render_template('admin/event_attendance.html', event=event,
-                           members=all_members, current_attendance=current_attendance)
+                           members=members, current_attendance=current_attendance,
+                           show_all=show_all)
 
 
 # =====================================================
@@ -922,7 +983,11 @@ def taskbook_import(id):
         flash('Please upload a CSV file.', 'danger')
         return redirect(url_for('admin.taskbook_edit', id=level.id))
 
-    content = file.stream.read().decode('utf-8-sig')
+    try:
+        content = file.stream.read().decode('utf-8-sig')
+    except UnicodeDecodeError:
+        flash('CSV file must be UTF-8 encoded.', 'danger')
+        return redirect(url_for('admin.taskbook_edit', id=level.id))
     reader = csv.DictReader(io.StringIO(content))
     max_order = db.session.query(db.func.max(TaskBookTask.display_order)).filter_by(
         level_id=level.id).scalar() or 0
@@ -1000,7 +1065,14 @@ def taskbook_member(member_id, level_id):
 
     progress_records = MemberTaskBookProgress.query.filter_by(member_id=member.id).all()
     progress_map = {p.task_id: p for p in progress_records}
-    officers = Member.query.filter_by(active=True).order_by(Member.name).all()
+    # Officers must be ARPSC-active. Pending registrations and Skywarn-only
+    # spotters can't sign off on task book tasks.
+    officers = (
+        Member.query
+        .filter_by(active=True, arpsc_active=True)
+        .order_by(Member.name)
+        .all()
+    )
 
     return render_template('admin/taskbook_member.html', member=member, level=level,
                            tasks=tasks, progress_map=progress_map, officers=officers)
@@ -1101,20 +1173,30 @@ def config_training_types():
 @admin_bp.route('/reports')
 @admin_required
 def reports():
-    year = request.args.get('year', date.today().year, type=int)
-    month = request.args.get('month', date.today().month, type=int)
-
+    year, month = _get_report_year_month()
     from ..reports import generate_monthly_report
     report = generate_monthly_report(year, month)
     return render_template('admin/reports.html', report=report, year=year, month=month)
 
 
+def _get_report_year_month():
+    """Read and validate year/month query params for the state report.
+    Falls back to today's year/month for any invalid input. Prevents crashes
+    from URL fuzzing or stale bookmarks with garbage params."""
+    today = date.today()
+    year = request.args.get('year', type=int)
+    month = request.args.get('month', type=int)
+    if year is None or year < 2000 or year > 2100:
+        year = today.year
+    if month is None or month < 1 or month > 12:
+        month = today.month
+    return year, month
+
+
 @admin_bp.route('/reports/export')
 @admin_required
 def reports_export():
-    year = request.args.get('year', date.today().year, type=int)
-    month = request.args.get('month', date.today().month, type=int)
-
+    year, month = _get_report_year_month()
     from ..reports import generate_monthly_report
     report = generate_monthly_report(year, month)
 
@@ -1191,7 +1273,12 @@ def export_csv(table):
         rows = TestSchedule.query.order_by(TestSchedule.test_date).all()
     elif table == 'members':
         columns = ['name', 'callsign', 'email', 'phone', 'city', 'state',
-                    'interest_skywarn', 'interest_ares_auxcomm', 'active', 'last_active_date']
+                    'interest_skywarn', 'interest_ares_auxcomm', 'interest_siren_testing',
+                    'arpsc_active', 'skywarn_active', 'siren_testing_active',
+                    'arpsc_activated_at', 'arpsc_deactivated_at',
+                    'skywarn_activated_at', 'skywarn_deactivated_at',
+                    'siren_testing_activated_at', 'siren_testing_deactivated_at',
+                    'active', 'archived_at', 'last_active_date']
         rows = Member.query.order_by(Member.name).all()
     elif table == 'events':
         columns = ['date', 'event_type', 'category', 'description', 'duration_hours', 'has_nts_liaison']
@@ -1315,7 +1402,12 @@ def import_csv(table):
         flash('Please upload a CSV file.', 'danger')
         return redirect(url_for('admin.import_export'))
 
-    content = file.stream.read().decode('utf-8-sig')
+    try:
+        content = file.stream.read().decode('utf-8-sig')
+    except UnicodeDecodeError:
+        flash('CSV file must be UTF-8 encoded. Open it in Excel/Numbers and "Save As" UTF-8 CSV.', 'danger')
+        return redirect(url_for('admin.import_export'))
+
     reader = csv.DictReader(io.StringIO(content))
     rows = list(reader)
 
@@ -1323,7 +1415,8 @@ def import_csv(table):
         flash('CSV file is empty.', 'warning')
         return redirect(url_for('admin.import_export'))
 
-    # Store in temp file for confirm step
+    # Store in temp file for confirm step. Created AFTER the empty check so an
+    # early return doesn't leak the file in /tmp.
     import_id = datetime.now().strftime('%Y%m%d%H%M%S')
     fd, tmp_path = tempfile.mkstemp(suffix='.csv', prefix='sirentracker_import_')
     with os.fdopen(fd, 'w', newline='') as f:
@@ -1471,6 +1564,11 @@ def import_confirm():
                 added += 1
 
         elif table == 'members':
+            from ..utils import snapshot_member_program_state, stamp_program_audit_dates
+            program_bool_cols = (
+                'interest_skywarn', 'interest_ares_auxcomm', 'interest_siren_testing',
+                'arpsc_active', 'skywarn_active', 'siren_testing_active',
+            )
             for row in reader:
                 email = (row.get('email') or '').strip().lower()
                 if not email:
@@ -1478,16 +1576,21 @@ def import_confirm():
                     continue
                 existing = Member.query.filter(db.func.lower(Member.email) == email).first()
                 if existing:
-                    # Update existing member
+                    prior = snapshot_member_program_state(existing)
                     existing.name = row.get('name', existing.name).strip()
                     existing.callsign = row.get('callsign', existing.callsign or '').strip() or existing.callsign
                     existing.phone = row.get('phone', existing.phone or '').strip() or existing.phone
                     existing.city = row.get('city', existing.city or '').strip() or existing.city
                     existing.state = row.get('state', existing.state or '').strip() or existing.state
-                    if row.get('interest_skywarn'):
-                        existing.interest_skywarn = _to_bool(row['interest_skywarn'])
-                    if row.get('interest_ares_auxcomm'):
-                        existing.interest_ares_auxcomm = _to_bool(row['interest_ares_auxcomm'])
+                    # Booleans: only apply when the cell is non-empty so a partial
+                    # CSV doesn't accidentally clear flags. _to_bool handles
+                    # 'true'/'false'/'yes'/'no'/'1'/'0'.
+                    for col in program_bool_cols:
+                        if row.get(col, '').strip() != '':
+                            setattr(existing, col, _to_bool(row[col]) or False)
+                    if row.get('active', '').strip() != '':
+                        existing.active = _to_bool(row['active']) or False
+                    stamp_program_audit_dates(existing, prior)
                     updated += 1
                 else:
                     member = Member(
@@ -1497,9 +1600,23 @@ def import_confirm():
                         phone=row.get('phone', '').strip() or None,
                         city=row.get('city', '').strip() or None,
                         state=row.get('state', '').strip() or None,
-                        interest_skywarn=_to_bool(row.get('interest_skywarn', 'false')),
-                        interest_ares_auxcomm=_to_bool(row.get('interest_ares_auxcomm', 'false')),
+                        interest_skywarn=_to_bool(row.get('interest_skywarn', 'false')) or False,
+                        interest_ares_auxcomm=_to_bool(row.get('interest_ares_auxcomm', 'false')) or False,
+                        interest_siren_testing=_to_bool(row.get('interest_siren_testing', 'false')) or False,
+                        arpsc_active=_to_bool(row.get('arpsc_active', 'false')) or False,
+                        skywarn_active=_to_bool(row.get('skywarn_active', 'false')) or False,
+                        siren_testing_active=_to_bool(row.get('siren_testing_active', 'false')) or False,
+                        active=_to_bool(row.get('active', 'true')) if row.get('active', '').strip() != '' else True,
                     )
+                    today = date.today()
+                    if member.arpsc_active:
+                        member.arpsc_activated_at = today
+                    if member.skywarn_active:
+                        member.skywarn_activated_at = today
+                    if member.siren_testing_active:
+                        member.siren_testing_activated_at = today
+                    if not member.active:
+                        member.archived_at = today
                     db.session.add(member)
                     added += 1
 
@@ -1553,7 +1670,8 @@ def import_confirm():
                 if not expiration:
                     tt = TrainingType.query.filter_by(name=training_type).first()
                     if tt and tt.has_expiration and tt.expiration_years:
-                        expiration = completion.replace(year=completion.year + tt.expiration_years)
+                        from ..utils import add_years
+                        expiration = add_years(completion, tt.expiration_years)
                 training = MemberTraining(
                     member_id=member.id,
                     training_type=training_type,

@@ -1,3 +1,4 @@
+from calendar import monthrange
 from datetime import date
 from flask import current_app
 from sqlalchemy import func, extract
@@ -57,8 +58,24 @@ def generate_monthly_report(year, month):
             categories[state_cat]['count'] += 1
             categories[state_cat]['hours'] += event_person_hours
 
-    # Active members count
-    active_members = Member.query.filter_by(active=True).count()
+    # ARPSC member count, as-of end of the reporting month.
+    # Skywarn-only spotters and siren-test-only volunteers are intentionally
+    # excluded — only members the admin has flagged arpsc_active count for the
+    # state. Historical reports stay accurate even after a member is later
+    # archived or deactivated, because we filter on the audit dates.
+    end_of_month = date(year, month, monthrange(year, month)[1])
+    active_members = Member.query.filter(
+        Member.arpsc_activated_at != None,  # noqa: E711 — SQLAlchemy IS NOT NULL
+        Member.arpsc_activated_at <= end_of_month,
+        db.or_(
+            Member.arpsc_deactivated_at == None,  # noqa: E711
+            Member.arpsc_deactivated_at > end_of_month,
+        ),
+        db.or_(
+            Member.archived_at == None,  # noqa: E711
+            Member.archived_at > end_of_month,
+        ),
+    ).count()
 
     # Dollar value
     dollar_rate = current_app.config.get('DOLLAR_VALUE_PER_HOUR', 34.79)

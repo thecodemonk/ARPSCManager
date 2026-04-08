@@ -172,6 +172,7 @@ def register():
             phone_privacy=form.phone_privacy.data,
             interest_skywarn=form.interest_skywarn.data,
             interest_ares_auxcomm=form.interest_ares_auxcomm.data,
+            interest_siren_testing=form.interest_siren_testing.data,
         )
         db.session.add(member)
         db.session.commit()

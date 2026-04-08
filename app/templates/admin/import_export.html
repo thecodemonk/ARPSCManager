@@ -125,8 +125,9 @@
       </div>
 
       <div class="tab-pane fade" id="import-members">
-        <p>Columns: <code>name, callsign, email, phone, city, state, interest_skywarn, interest_ares_auxcomm</code><br>
-        Email is required and used to match existing members (updates) or create new ones.</p>
+        <p>Columns: <code>name, callsign, email, phone, city, state, interest_skywarn, interest_ares_auxcomm, interest_siren_testing, arpsc_active, skywarn_active, siren_testing_active</code><br>
+        Email is required and used to match existing members (updates) or create new ones.
+        <code>*_active</code> flags are admin-only — toggling one auto-stamps the activation/deactivation date.</p>
         <form method="post" action="{{ url_for('admin.import_csv', table='members') }}" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-3">

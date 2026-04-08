@@ -117,11 +117,17 @@ class MemberAdminForm(FlaskForm):
     preferred_comm = SelectField('Preferred Comm',
                                  choices=[('email', 'Email'), ('call', 'Call'), ('text', 'Text')])
     phone_privacy = BooleanField('Phone Privacy')
+    # Member-controlled interest flags
     interest_skywarn = BooleanField('SKYWARN')
     interest_ares_auxcomm = BooleanField('ARES / AUXCOMM')
+    interest_siren_testing = BooleanField('Siren Testing')
+    # Admin-controlled program active flags — these gate state report counts and pickers
+    arpsc_active = BooleanField('ARPSC Active')
+    skywarn_active = BooleanField('SKYWARN Active')
+    siren_testing_active = BooleanField('Siren Testing Active')
     background_check = BooleanField('Background Check')
     mi_volunteer_registry = BooleanField('MI Volunteer Registry')
-    active = BooleanField('Active')
+    active = BooleanField('Active (not archived)')
     notes = TextAreaField('Admin Notes', validators=[Optional(), Length(max=2000)])
 
 

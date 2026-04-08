@@ -15,22 +15,58 @@
   {% endif %}
 </div>
 
-<form class="row g-2 mb-3" method="get">
+<div class="row g-2 mb-3">
+  <div class="col-md-3">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="h4 mb-0">{{ stats.arpsc }}</div>
+      <div class="small text-muted">ARPSC active <span class="text-secondary">(state count)</span></div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="h4 mb-0">{{ stats.skywarn }}</div>
+      <div class="small text-muted">SKYWARN active</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="h4 mb-0">{{ stats.siren_testing }}</div>
+      <div class="small text-muted">Siren testers active</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="h4 mb-0">{{ stats.archived }}</div>
+      <div class="small text-muted">Archived</div>
+    </div>
+  </div>
+</div>
+
+<form class="row g-2 mb-2" method="get">
   <div class="col-auto">
     <input type="text" name="q" class="form-control form-control-sm" placeholder="Search name, callsign, email..." value="{{ search }}">
   </div>
+  <input type="hidden" name="program" value="{{ filter_program }}">
   <div class="col-auto">
-    <select name="active" class="form-select form-select-sm">
-      <option value="">All</option>
-      <option value="1" {% if filter_active == '1' %}selected{% endif %}>Active</option>
-      <option value="0" {% if filter_active == '0' %}selected{% endif %}>Inactive</option>
-    </select>
-  </div>
-  <div class="col-auto">
-    <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+    <button type="submit" class="btn btn-sm btn-primary">Search</button>
     <a href="{{ url_for('admin.members') }}" class="btn btn-sm btn-secondary">Clear</a>
   </div>
 </form>
+
+<div class="mb-3">
+  {% set chips = [
+    ('', 'All Active'),
+    ('arpsc', 'ARPSC'),
+    ('skywarn', 'SKYWARN'),
+    ('siren_testing', 'Siren Testing'),
+    ('pending', 'Pending Approval'),
+    ('archived', 'Archived'),
+  ] %}
+  {% for value, label in chips %}
+  <a href="{{ url_for('admin.members', program=value, q=search) }}"
+     class="btn btn-sm {{ 'btn-primary' if filter_program == value else 'btn-outline-primary' }}">{{ label }}</a>
+  {% endfor %}
+</div>
 
 <div class="table-responsive">
   <table class="table table-hover">
@@ -40,26 +76,33 @@
         <th>Callsign</th>
         <th>Email</th>
         <th>Status</th>
-        <th>Interests</th>
+        <th>Programs</th>
         <th>Last Active</th>
       </tr>
     </thead>
     <tbody>
       {% for m in members %}
-      <tr class="cursor-pointer" onclick="window.location='{{ url_for('admin.member_detail', id=m.id) }}'">
-        <td>{{ m.name }}</td>
+      <tr class="js-clickable-row cursor-pointer" tabindex="0" role="link"
+          data-href="{{ url_for('admin.member_detail', id=m.id) }}">
+        <td><a href="{{ url_for('admin.member_detail', id=m.id) }}" class="text-decoration-none text-body">{{ m.name }}</a></td>
         <td>{{ m.callsign or '' }}</td>
         <td>{{ m.email }}</td>
         <td>
-          {% if m.active %}
+          {% if not m.active %}
+          <span class="badge bg-secondary">Archived</span>
+          {% elif m.arpsc_active or m.skywarn_active or m.siren_testing_active %}
           <span class="badge bg-success">Active</span>
           {% else %}
-          <span class="badge bg-secondary">Inactive</span>
+          <span class="badge bg-warning text-dark">Pending</span>
           {% endif %}
         </td>
         <td>
-          {% if m.interest_skywarn %}<span class="badge bg-info text-dark">SKYWARN</span>{% endif %}
-          {% if m.interest_ares_auxcomm %}<span class="badge bg-primary">ARES</span>{% endif %}
+          {% if m.arpsc_active %}<span class="badge bg-primary" title="ARPSC active (admin)">ARPSC</span>
+          {% elif m.interest_ares_auxcomm %}<span class="badge bg-primary bg-opacity-25 text-primary" title="Interested but not yet activated">arpsc?</span>{% endif %}
+          {% if m.skywarn_active %}<span class="badge bg-info text-dark" title="SKYWARN active (admin)">SKYWARN</span>
+          {% elif m.interest_skywarn %}<span class="badge bg-info bg-opacity-25 text-info" title="Interested but not yet activated">skywarn?</span>{% endif %}
+          {% if m.siren_testing_active %}<span class="badge bg-success" title="Siren testing active (admin)">Sirens</span>
+          {% elif m.interest_siren_testing %}<span class="badge bg-success bg-opacity-25 text-success" title="Interested but not yet activated">sirens?</span>{% endif %}
         </td>
         <td>{{ m.last_active_date|format_date if m.last_active_date else '—' }}</td>
       </tr>
@@ -67,5 +110,5 @@
     </tbody>
   </table>
 </div>
-<p class="text-muted">{{ members|length }} member{{ 's' if members|length != 1 }}</p>
+<p class="text-muted">{{ members|length }} member{{ 's' if members|length != 1 }} shown</p>
 {% endblock %}

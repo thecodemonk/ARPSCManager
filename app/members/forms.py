@@ -31,6 +31,7 @@ class RegisterForm(FlaskForm):
     phone_privacy = BooleanField('Keep my phone number private', default=True)
     interest_skywarn = BooleanField('SKYWARN')
     interest_ares_auxcomm = BooleanField('ARES / AUXCOMM')
+    interest_siren_testing = BooleanField('Siren Testing')
 
 
 class ProfileForm(FlaskForm):
@@ -49,6 +50,7 @@ class ProfileForm(FlaskForm):
     phone_privacy = BooleanField('Keep my phone number private')
     interest_skywarn = BooleanField('SKYWARN')
     interest_ares_auxcomm = BooleanField('ARES / AUXCOMM')
+    interest_siren_testing = BooleanField('Siren Testing')
 
 
 class TrainingForm(FlaskForm):

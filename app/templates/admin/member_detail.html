@@ -6,10 +6,11 @@
   <h2>{{ member.name }}{% if member.callsign %} ({{ member.callsign }}){% endif %}</h2>
   <div>
     <a href="{{ url_for('admin.member_edit', id=member.id) }}" class="btn btn-sm btn-primary">Edit</a>
-    <form method="post" action="{{ url_for('admin.member_toggle_active', id=member.id) }}" class="d-inline">
+    <form method="post" action="{{ url_for('admin.member_toggle_active', id=member.id) }}" class="d-inline"
+          onsubmit="return confirm('{{ 'Restore this member?' if not member.active else 'Archive this member? They will be hidden from current pickers and reports but kept in history.' }}');">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-sm btn-{{ 'warning' if member.active else 'success' }}">
-        {{ 'Deactivate' if member.active else 'Activate' }}
+      <button type="submit" class="btn btn-sm btn-{{ 'success' if not member.active else 'outline-danger' }}">
+        {{ 'Restore' if not member.active else 'Archive' }}
       </button>
     </form>
   </div>
@@ -32,15 +33,60 @@
     <div class="card mb-3">
       <div class="card-header">Status</div>
       <div class="card-body">
-        <p><strong>Status:</strong>
-          {% if member.active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+        <p><strong>Record:</strong>
+          {% if member.active %}
+            <span class="badge bg-success">Active</span>
+          {% else %}
+            <span class="badge bg-secondary">Archived</span>
+            {% if member.archived_at %}<small class="text-muted">on {{ member.archived_at|format_date }}</small>{% endif %}
+          {% endif %}
         </p>
-        <p><strong>Interests:</strong>
-          {% if member.interest_skywarn %}SKYWARN{% endif %}
-          {% if member.interest_skywarn and member.interest_ares_auxcomm %}, {% endif %}
-          {% if member.interest_ares_auxcomm %}ARES / AUXCOMM{% endif %}
-          {% if not member.interest_skywarn and not member.interest_ares_auxcomm %}—{% endif %}
-        </p>
+        <table class="table table-sm mb-3">
+          <thead>
+            <tr><th>Program</th><th class="text-center">Interest</th><th class="text-center">Active</th><th class="text-muted small">Since</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>ARPSC</strong> <small class="text-muted">(state count)</small></td>
+              <td class="text-center">{% if member.interest_ares_auxcomm %}<span class="text-success">&check;</span>{% else %}—{% endif %}</td>
+              <td class="text-center">
+                {% if member.arpsc_active %}<span class="badge bg-primary">Active</span>
+                {% elif member.interest_ares_auxcomm %}<span class="badge bg-warning text-dark">Pending</span>
+                {% else %}—{% endif %}
+              </td>
+              <td class="small text-muted">
+                {% if member.arpsc_activated_at %}{{ member.arpsc_activated_at|format_date }}{% endif %}
+                {% if member.arpsc_deactivated_at and not member.arpsc_active %}<br>off {{ member.arpsc_deactivated_at|format_date }}{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>SKYWARN</strong></td>
+              <td class="text-center">{% if member.interest_skywarn %}<span class="text-success">&check;</span>{% else %}—{% endif %}</td>
+              <td class="text-center">
+                {% if member.skywarn_active %}<span class="badge bg-info text-dark">Active</span>
+                {% elif member.interest_skywarn %}<span class="badge bg-warning text-dark">Pending</span>
+                {% else %}—{% endif %}
+              </td>
+              <td class="small text-muted">
+                {% if member.skywarn_activated_at %}{{ member.skywarn_activated_at|format_date }}{% endif %}
+                {% if member.skywarn_deactivated_at and not member.skywarn_active %}<br>off {{ member.skywarn_deactivated_at|format_date }}{% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Siren Testing</strong></td>
+              <td class="text-center">{% if member.interest_siren_testing %}<span class="text-success">&check;</span>{% else %}—{% endif %}</td>
+              <td class="text-center">
+                {% if member.siren_testing_active %}<span class="badge bg-success">Active</span>
+                {% elif member.interest_siren_testing %}<span class="badge bg-warning text-dark">Pending</span>
+                {% else %}—{% endif %}
+              </td>
+              <td class="small text-muted">
+                {% if member.siren_testing_activated_at %}{{ member.siren_testing_activated_at|format_date }}{% endif %}
+                {% if member.siren_testing_deactivated_at and not member.siren_testing_active %}<br>off {{ member.siren_testing_deactivated_at|format_date }}{% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
         <p><strong>Background Check:</strong> {{ member.background_check|yesno }}</p>
         <p><strong>MI Volunteer Registry:</strong> {{ member.mi_volunteer_registry|yesno }}</p>
         <p><strong>Last Active:</strong> {{ member.last_active_date|format_date if member.last_active_date else '—' }}</p>

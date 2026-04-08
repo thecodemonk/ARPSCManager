@@ -56,16 +56,66 @@
     </div>
   </div>
 
+  <fieldset class="border rounded p-3 mb-3">
+    <legend class="float-none w-auto px-2 fs-6 text-muted">Programs</legend>
+    <p class="small text-muted mb-2">
+      <strong>Interest</strong> = the member's own selection (also editable here).
+      <strong>Active</strong> = admin gate that drives state report counts and attendance pickers.
+      A member can be interested without being active (e.g. SKYWARN training has lapsed).
+    </p>
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Program</th>
+          <th class="text-center" style="width: 110px;">Interest</th>
+          <th class="text-center" style="width: 110px;">Active</th>
+          <th class="text-muted small">Last toggled</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ARES / AUXCOMM (ARPSC)</strong><br><span class="small text-muted">Counts toward state ARES member total.</span></td>
+          <td class="text-center">{{ form.interest_ares_auxcomm(class="form-check-input") }}</td>
+          <td class="text-center">{{ form.arpsc_active(class="form-check-input") }}</td>
+          <td class="small text-muted">
+            {% if member.arpsc_activated_at %}Activated {{ member.arpsc_activated_at|format_date }}<br>{% endif %}
+            {% if member.arpsc_deactivated_at %}Deactivated {{ member.arpsc_deactivated_at|format_date }}{% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td><strong>SKYWARN</strong><br><span class="small text-muted">Trained spotters. Net attendance counts; not a state ARES member.</span></td>
+          <td class="text-center">{{ form.interest_skywarn(class="form-check-input") }}</td>
+          <td class="text-center">{{ form.skywarn_active(class="form-check-input") }}</td>
+          <td class="small text-muted">
+            {% if member.skywarn_activated_at %}Activated {{ member.skywarn_activated_at|format_date }}<br>{% endif %}
+            {% if member.skywarn_deactivated_at %}Deactivated {{ member.skywarn_deactivated_at|format_date }}{% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Siren Testing</strong><br><span class="small text-muted">Volunteer siren testers (no ARPSC/Skywarn membership required).</span></td>
+          <td class="text-center">{{ form.interest_siren_testing(class="form-check-input") }}</td>
+          <td class="text-center">{{ form.siren_testing_active(class="form-check-input") }}</td>
+          <td class="small text-muted">
+            {% if member.siren_testing_activated_at %}Activated {{ member.siren_testing_activated_at|format_date }}<br>{% endif %}
+            {% if member.siren_testing_deactivated_at %}Deactivated {{ member.siren_testing_deactivated_at|format_date }}{% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </fieldset>
+
   <div class="row mb-3">
-    <div class="col-md-3">
+    <div class="col-md-4">
       <div class="form-check">{{ form.phone_privacy(class="form-check-input") }} {{ form.phone_privacy.label(class="form-check-label") }}</div>
-      <div class="form-check">{{ form.interest_skywarn(class="form-check-input") }} {{ form.interest_skywarn.label(class="form-check-label") }}</div>
-      <div class="form-check">{{ form.interest_ares_auxcomm(class="form-check-input") }} {{ form.interest_ares_auxcomm.label(class="form-check-label") }}</div>
-    </div>
-    <div class="col-md-3">
       <div class="form-check">{{ form.background_check(class="form-check-input") }} {{ form.background_check.label(class="form-check-label") }}</div>
       <div class="form-check">{{ form.mi_volunteer_registry(class="form-check-input") }} {{ form.mi_volunteer_registry.label(class="form-check-label") }}</div>
+    </div>
+    <div class="col-md-4">
       <div class="form-check">{{ form.active(class="form-check-input") }} {{ form.active.label(class="form-check-label") }}</div>
+      <div class="small text-muted">
+        Uncheck to archive (member left, deceased, etc.). They stay in past attendance and historical reports, but vanish from current counts and pickers.
+        {% if member.archived_at %}<br><strong>Archived {{ member.archived_at|format_date }}.</strong>{% endif %}
+      </div>
     </div>
   </div>
 
