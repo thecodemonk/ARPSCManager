@@ -7,7 +7,7 @@ from datetime import date, datetime
 
 from flask import (
     abort, render_template, request, flash, redirect, url_for,
-    Response, stream_with_context, session, current_app,
+    Response, stream_with_context, session, current_app, jsonify,
 )
 from flask_login import current_user
 from .decorators import admin_required
@@ -706,7 +706,7 @@ def event_delete(id):
     return redirect(url_for('admin.events'))
 
 
-@admin_bp.route('/events/<int:id>/attendance', methods=['GET', 'POST'])
+@admin_bp.route('/events/<int:id>/attendance')
 @admin_required
 def event_attendance(id):
     event = db.session.get(Event, id) or abort(404)
@@ -718,26 +718,6 @@ def event_attendance(id):
     # based on which pills are toggled. We still preselect pills based on
     # the event's category for the common case.
     members = Member.query.filter_by(active=True).order_by(Member.name).all()
-
-    if request.method == 'POST':
-        EventAttendance.query.filter_by(event_id=event.id).delete()
-        for member in members:
-            checkbox_key = f'member_{member.id}'
-            hours_key = f'hours_{member.id}'
-            if checkbox_key in request.form:
-                hours = request.form.get(hours_key, event.duration_hours, type=float)
-                att = EventAttendance(
-                    event_id=event.id,
-                    member_id=member.id,
-                    hours=hours or event.duration_hours,
-                )
-                db.session.add(att)
-                if not member.last_active_date or member.last_active_date < event.date:
-                    member.last_active_date = event.date
-        db.session.commit()
-        flash('Attendance updated.', 'success')
-        return redirect(url_for('admin.event_attendance', id=event.id))
-
     current_attendance = {a.member_id: a for a in event.attendance}
 
     category_defaults = {
@@ -750,6 +730,54 @@ def event_attendance(id):
     return render_template('admin/event_attendance.html', event=event,
                            members=members, current_attendance=current_attendance,
                            default_programs=default_programs)
+
+
+@admin_bp.route('/events/<int:event_id>/attendance/upsert', methods=['POST'])
+@admin_required
+def event_attendance_upsert(event_id):
+    """Per-row attendance autosave. The picker fires this on every checkbox
+    change and on hours-field blur, so an admin can fill in attendance just
+    by ticking boxes — no Save button required. Returns JSON; on failure the
+    JS reverts the row's UI state."""
+    event = db.session.get(Event, event_id) or abort(404)
+
+    try:
+        member_id = int(request.form.get('member_id', 0))
+    except (TypeError, ValueError):
+        return jsonify({'ok': False, 'error': 'Invalid member_id'}), 400
+
+    member = db.session.get(Member, member_id)
+    if not member or not member.active:
+        return jsonify({'ok': False, 'error': 'Member not found or archived'}), 404
+
+    attending = request.form.get('attending') == 'true'
+
+    try:
+        hours = float(request.form.get('hours') or event.duration_hours or 0)
+    except (TypeError, ValueError):
+        hours = float(event.duration_hours or 0)
+    if hours < 0:
+        hours = 0.0
+
+    existing = EventAttendance.query.filter_by(
+        event_id=event.id, member_id=member.id
+    ).first()
+
+    if attending:
+        if existing:
+            existing.hours = hours
+        else:
+            db.session.add(EventAttendance(
+                event_id=event.id, member_id=member.id, hours=hours,
+            ))
+        if not member.last_active_date or member.last_active_date < event.date:
+            member.last_active_date = event.date
+    else:
+        if existing:
+            db.session.delete(existing)
+
+    db.session.commit()
+    return jsonify({'ok': True, 'attending': attending, 'hours': hours})
 
 
 # =====================================================

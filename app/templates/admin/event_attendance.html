@@ -9,6 +9,8 @@
   <br>Default duration: {{ event.duration_hours }} hours
 </p>
 
+<input type="hidden" id="csrf-token" value="{{ csrf_token() }}">
+
 <div class="alert alert-light border py-2 mb-3">
   <div class="d-flex flex-wrap align-items-center gap-2">
     <span class="small text-muted me-1">Filter:</span>
@@ -35,67 +37,173 @@
 
     <span class="small text-muted ms-auto">
       Showing <span id="js-visible-count">{{ members|length }}</span> of {{ members|length }} active members
+      <span id="autosave-status" class="ms-2" aria-live="polite"></span>
     </span>
   </div>
 </div>
 
-<form method="post">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="table-responsive">
+  <table class="table table-sm table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th style="width: 40px;">
+          <input type="checkbox" id="select-all" class="form-check-input">
+        </th>
+        <th>Name</th>
+        <th>Callsign</th>
+        <th style="width: 120px;">Hours</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in members %}
+      {% set att = current_attendance.get(m.id) %}
+      <tr class="js-attendee-row"
+          data-member-id="{{ m.id }}"
+          data-siren="{{ '1' if m.siren_testing_active else '0' }}"
+          data-skywarn="{{ '1' if m.skywarn_active else '0' }}"
+          data-arpsc="{{ '1' if m.arpsc_active else '0' }}"
+          data-attending="{{ '1' if att else '0' }}">
+        <td>
+          <input type="checkbox" class="form-check-input member-check"
+                 {% if att %}checked{% endif %}>
+        </td>
+        <td>{{ m.name }}</td>
+        <td>{{ m.callsign or '' }}</td>
+        <td>
+          <input type="number" class="form-control form-control-sm member-hours"
+                 value="{{ att.hours if att else event.duration_hours }}" step="0.25" min="0">
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-  <div class="table-responsive">
-    <table class="table table-sm table-hover">
-      <thead class="table-dark">
-        <tr>
-          <th style="width: 40px;">
-            <input type="checkbox" id="select-all" class="form-check-input">
-          </th>
-          <th>Name</th>
-          <th>Callsign</th>
-          <th style="width: 120px;">Hours</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for m in members %}
-        {% set att = current_attendance.get(m.id) %}
-        <tr class="js-attendee-row"
-            data-siren="{{ '1' if m.siren_testing_active else '0' }}"
-            data-skywarn="{{ '1' if m.skywarn_active else '0' }}"
-            data-arpsc="{{ '1' if m.arpsc_active else '0' }}"
-            data-attending="{{ '1' if att else '0' }}">
-          <td>
-            <input type="checkbox" name="member_{{ m.id }}" class="form-check-input member-check"
-                   {% if att %}checked{% endif %}>
-          </td>
-          <td>{{ m.name }}</td>
-          <td>{{ m.callsign or '' }}</td>
-          <td>
-            <input type="number" name="hours_{{ m.id }}" class="form-control form-control-sm"
-                   value="{{ att.hours if att else event.duration_hours }}" step="0.25" min="0">
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="d-flex justify-content-between">
-    <button type="submit" class="btn btn-primary">Save Attendance</button>
-    <a href="{{ url_for('admin.events') }}" class="btn btn-secondary">Back to Events</a>
-  </div>
-</form>
+<div class="mt-3">
+  <a href="{{ url_for('admin.events') }}" class="btn btn-secondary">Back to Events</a>
+  <span class="text-muted small ms-3">Changes save automatically.</span>
+</div>
 
 <script>
 (function () {
-  // Select-all checkbox in the table header — toggles every visible row.
-  // We only operate on visible rows so a "select all" while filtered to
-  // SKYWARN doesn't accidentally tick members from other programs.
+  var upsertUrl = "{{ url_for('admin.event_attendance_upsert', event_id=event.id) }}";
+  var csrfToken = document.getElementById('csrf-token').value;
+  var statusEl = document.getElementById('autosave-status');
+  var inFlight = 0;
+
+  function setStatus(text, cls) {
+    if (!statusEl) return;
+    statusEl.textContent = text;
+    statusEl.className = 'ms-2 small ' + (cls || '');
+  }
+
+  function showSaving() {
+    inFlight++;
+    setStatus('Saving…', 'text-muted');
+  }
+
+  function showSaved() {
+    inFlight = Math.max(0, inFlight - 1);
+    if (inFlight === 0) {
+      setStatus('All changes saved', 'text-success');
+      setTimeout(function () {
+        if (inFlight === 0) setStatus('', '');
+      }, 1500);
+    }
+  }
+
+  function showError(msg) {
+    inFlight = Math.max(0, inFlight - 1);
+    setStatus(msg || 'Save failed — please retry', 'text-danger fw-bold');
+  }
+
+  // Per-row autosave. Returns a Promise so callers can chain or revert UI on
+  // failure. Fired by both the checkbox change handler and the hours blur
+  // handler — those decide whether to optimistically update the row state
+  // before calling and how to roll back on error.
+  function saveRow(row) {
+    var checkbox = row.querySelector('.member-check');
+    var hoursInput = row.querySelector('.member-hours');
+    var memberId = row.dataset.memberId;
+    var attending = checkbox.checked;
+    var hours = hoursInput.value;
+
+    var fd = new FormData();
+    fd.append('csrf_token', csrfToken);
+    fd.append('member_id', memberId);
+    fd.append('attending', attending ? 'true' : 'false');
+    fd.append('hours', hours);
+
+    showSaving();
+    return fetch(upsertUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        if (!data.ok) throw new Error(data.error || 'Save failed');
+        // Update the data-attending attribute so the filter knows whether to
+        // pin this row visible (current attendees are always shown regardless
+        // of pill state).
+        row.dataset.attending = attending ? '1' : '0';
+        showSaved();
+      })
+      .catch(function (err) {
+        showError('Failed to save ' + (row.querySelector('td:nth-child(2)').textContent || 'member') + ' — ' + err.message);
+        // Revert the checkbox to the server's last-known state
+        checkbox.checked = (row.dataset.attending === '1');
+      });
+  }
+
+  // Checkbox change → save immediately
+  document.querySelectorAll('.member-check').forEach(function (cb) {
+    cb.addEventListener('change', function () {
+      saveRow(cb.closest('.js-attendee-row'));
+    });
+  });
+
+  // Hours blur → save (only if member is attending — saving hours for an
+  // unchecked member would create an attendance row, which is the wrong
+  // intent). Also save on Enter for keyboard convenience.
+  document.querySelectorAll('.member-hours').forEach(function (input) {
+    var lastSaved = input.value;
+    function maybeSave() {
+      if (input.value === lastSaved) return;
+      var row = input.closest('.js-attendee-row');
+      var checkbox = row.querySelector('.member-check');
+      if (!checkbox.checked) {
+        // Hours edited but member not attending — nothing to persist yet.
+        // The next time they get checked, the current hours value will be
+        // sent along with the upsert.
+        lastSaved = input.value;
+        return;
+      }
+      lastSaved = input.value;
+      saveRow(row);
+    }
+    input.addEventListener('blur', maybeSave);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        input.blur();
+      }
+    });
+  });
+
+  // Select-all checkbox in the table header — toggles every visible row and
+  // fires an autosave per row. We only operate on visible rows so a "select
+  // all" while filtered to SKYWARN doesn't accidentally tick members from
+  // other programs.
   var selectAll = document.getElementById('select-all');
   if (selectAll) {
     selectAll.addEventListener('change', function () {
       document.querySelectorAll('.js-attendee-row').forEach(function (row) {
         if (row.style.display === 'none') return;
         var cb = row.querySelector('.member-check');
-        if (cb) cb.checked = selectAll.checked;
+        if (cb && cb.checked !== selectAll.checked) {
+          cb.checked = selectAll.checked;
+          saveRow(row);
+        }
       });
     });
   }
@@ -123,7 +231,6 @@
       if (allChecked || selected.length === 0) {
         show = true;
       } else if (row.dataset.attending === '1') {
-        // Always keep current attendees visible regardless of filter
         show = true;
       } else {
         show = selected.some(function (p) { return row.dataset[p] === '1'; });
@@ -136,14 +243,12 @@
 
   programPills.forEach(function (cb) {
     cb.addEventListener('change', function () {
-      // Picking a specific program clears "All Active"
       if (this.checked && allPill) allPill.checked = false;
       applyFilter();
     });
   });
   if (allPill) {
     allPill.addEventListener('change', function () {
-      // Picking "All Active" clears the program pills
       if (this.checked) {
         programPills.forEach(function (cb) { cb.checked = false; });
       }
