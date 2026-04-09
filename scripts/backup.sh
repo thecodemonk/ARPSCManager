@@ -42,7 +42,7 @@ fi
 
 # Upload to Google Drive — fail loudly if rclone returns non-zero so cron
 # emails the failure and we don't silently delete a broken backup.
-if ! rclone copy "${BACKUP_DIR}" "${RCLONE_REMOTE}/$(date +%Y-%m-%d)/" --log-level INFO; then
+if ! rclone copy "${BACKUP_DIR}" "${RCLONE_REMOTE}/$(date +%Y-%m-%d)/" --config /root/.config/rclone/rclone.conf --log-level INFO; then
     echo "ERROR: rclone upload failed — leaving ${BACKUP_DIR} for inspection"
     exit 1
 fi
