@@ -198,3 +198,15 @@ def siren_add_note(id):
         db.session.commit()
         flash('Maintenance note added.', 'success')
     return redirect(url_for('members.siren_edit', id=id))
+
+
+@members_bp.route('/sirens/notes/<int:note_id>/delete', methods=['POST'])
+@siren_editor_required
+def siren_delete_note(note_id):
+    from flask import abort
+    entry = db.session.get(SirenMaintenanceLog, note_id) or abort(404)
+    siren_id = entry.siren_id
+    db.session.delete(entry)
+    db.session.commit()
+    flash('Maintenance note deleted.', 'info')
+    return redirect(url_for('members.siren_edit', id=siren_id))

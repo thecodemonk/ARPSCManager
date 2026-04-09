@@ -68,8 +68,15 @@
           {% for entry in siren.maintenance_log %}
           <div class="list-group-item px-0">
             <div class="d-flex justify-content-between">
-              <strong>{{ entry.author }}</strong>
-              <small class="text-muted">{{ entry.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+              <div>
+                <strong>{{ entry.author }}</strong>
+                <small class="text-muted ms-2">{{ entry.created_at.strftime('%b %d, %Y %I:%M %p') }}</small>
+              </div>
+              <form method="post" action="{{ url_for('members.siren_delete_note', note_id=entry.id) }}" class="d-inline"
+                    data-confirm="Delete this maintenance note?">
+                {{ note_form.hidden_tag() }}
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1">Delete</button>
+              </form>
             </div>
             <div>{{ entry.note }}</div>
           </div>

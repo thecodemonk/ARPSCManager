@@ -90,6 +90,17 @@ def siren_add_note(id):
     return redirect(url_for('admin.siren_edit', id=id))
 
 
+@admin_bp.route('/sirens/notes/<int:note_id>/delete', methods=['POST'])
+@admin_required
+def siren_delete_note(note_id):
+    entry = db.session.get(SirenMaintenanceLog, note_id) or abort(404)
+    siren_id = entry.siren_id
+    db.session.delete(entry)
+    db.session.commit()
+    flash('Maintenance note deleted.', 'info')
+    return redirect(url_for('admin.siren_edit', id=siren_id))
+
+
 # --- Tests ---
 
 @admin_bp.route('/tests')
