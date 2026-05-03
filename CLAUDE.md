@@ -60,8 +60,8 @@ sudo systemctl restart sirentracker
 1. **Failed** — tested this year and failed
 2. **Flagged** — manually marked for recheck (needs_retest); overrides Passed
 3. **Passed** — tested this year and passed
-4. **Overdue** — no test in over 12 months or never tested
-5. **Assigned** — volunteer claimed for upcoming test
+4. **Assigned** — volunteer claimed for upcoming test (beats Overdue so claims on stale sirens are visible)
+5. **Overdue** — no test in over 12 months or never tested
 6. **Untested** — not yet tested this year (but tested within 12 months)
 
 ## Event Types → State Report Mapping

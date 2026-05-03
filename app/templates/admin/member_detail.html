@@ -21,7 +21,7 @@
     <div class="card mb-3">
       <div class="card-header">Contact Info</div>
       <div class="card-body">
-        <p><strong>Email:</strong> {{ member.email }}</p>
+        <p><strong>Email:</strong> {{ member.email or '—' }}</p>
         <p><strong>Phone:</strong> {{ member.phone or '—' }}{% if member.phone_privacy %} <span class="badge bg-secondary">Private</span>{% endif %}</p>
         <p><strong>Address:</strong> {{ [member.street, member.city, member.state, member.zip_code]|select|join(', ') or '—' }}</p>
         <p><strong>Emergency Contact:</strong> {{ member.emergency_contact or '—' }}</p>

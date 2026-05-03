@@ -1,8 +1,8 @@
 {% extends "admin/layout.html" %}
-{% block title %}Edit {{ member.name }} — ARPSC Manager{% endblock %}
+{% block title %}{{ ('Edit ' + member.name) if member else 'Add Member' }} — ARPSC Manager{% endblock %}
 
 {% block admin_content %}
-<h2 class="mb-4">Edit Member</h2>
+<h2 class="mb-4">{{ 'Edit Member' if member else 'Add Member' }}</h2>
 
 <form method="post">
   {{ form.hidden_tag() }}
@@ -78,8 +78,8 @@
           <td class="text-center">{{ form.interest_ares_auxcomm(class="form-check-input") }}</td>
           <td class="text-center">{{ form.arpsc_active(class="form-check-input") }}</td>
           <td class="small text-muted">
-            {% if member.arpsc_activated_at %}Activated {{ member.arpsc_activated_at|format_date }}<br>{% endif %}
-            {% if member.arpsc_deactivated_at %}Deactivated {{ member.arpsc_deactivated_at|format_date }}{% endif %}
+            {% if member and member.arpsc_activated_at %}Activated {{ member.arpsc_activated_at|format_date }}<br>{% endif %}
+            {% if member and member.arpsc_deactivated_at %}Deactivated {{ member.arpsc_deactivated_at|format_date }}{% endif %}
           </td>
         </tr>
         <tr>
@@ -87,8 +87,8 @@
           <td class="text-center">{{ form.interest_skywarn(class="form-check-input") }}</td>
           <td class="text-center">{{ form.skywarn_active(class="form-check-input") }}</td>
           <td class="small text-muted">
-            {% if member.skywarn_activated_at %}Activated {{ member.skywarn_activated_at|format_date }}<br>{% endif %}
-            {% if member.skywarn_deactivated_at %}Deactivated {{ member.skywarn_deactivated_at|format_date }}{% endif %}
+            {% if member and member.skywarn_activated_at %}Activated {{ member.skywarn_activated_at|format_date }}<br>{% endif %}
+            {% if member and member.skywarn_deactivated_at %}Deactivated {{ member.skywarn_deactivated_at|format_date }}{% endif %}
           </td>
         </tr>
         <tr>
@@ -96,8 +96,8 @@
           <td class="text-center">{{ form.interest_siren_testing(class="form-check-input") }}</td>
           <td class="text-center">{{ form.siren_testing_active(class="form-check-input") }}</td>
           <td class="small text-muted">
-            {% if member.siren_testing_activated_at %}Activated {{ member.siren_testing_activated_at|format_date }}<br>{% endif %}
-            {% if member.siren_testing_deactivated_at %}Deactivated {{ member.siren_testing_deactivated_at|format_date }}{% endif %}
+            {% if member and member.siren_testing_activated_at %}Activated {{ member.siren_testing_activated_at|format_date }}<br>{% endif %}
+            {% if member and member.siren_testing_deactivated_at %}Deactivated {{ member.siren_testing_deactivated_at|format_date }}{% endif %}
           </td>
         </tr>
       </tbody>
@@ -116,7 +116,7 @@
       <div class="form-check">{{ form.active(class="form-check-input") }} {{ form.active.label(class="form-check-label") }}</div>
       <div class="small text-muted">
         Uncheck to archive (member left, deceased, etc.). They stay in past attendance and historical reports, but vanish from current counts and pickers.
-        {% if member.archived_at %}<br><strong>Archived {{ member.archived_at|format_date }}.</strong>{% endif %}
+        {% if member and member.archived_at %}<br><strong>Archived {{ member.archived_at|format_date }}.</strong>{% endif %}
       </div>
     </div>
   </div>
@@ -127,6 +127,6 @@
   </div>
 
   <button type="submit" class="btn btn-primary">Save</button>
-  <a href="{{ url_for('admin.member_detail', id=member.id) }}" class="btn btn-secondary">Cancel</a>
+  <a href="{{ url_for('admin.member_detail', id=member.id) if member else url_for('admin.members') }}" class="btn btn-secondary">Cancel</a>
 </form>
 {% endblock %}

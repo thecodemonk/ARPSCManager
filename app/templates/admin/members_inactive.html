@@ -22,7 +22,7 @@
       <tr>
         <td><a href="{{ url_for('admin.member_detail', id=m.id) }}">{{ m.name }}</a></td>
         <td>{{ m.callsign or '' }}</td>
-        <td>{{ m.email }}</td>
+        <td>{{ m.email or '' }}</td>
         <td>{{ m.last_active_date|format_date if m.last_active_date else 'Never' }}</td>
         <td>
           <form method="post" action="{{ url_for('admin.member_toggle_active', id=m.id) }}" class="d-inline"

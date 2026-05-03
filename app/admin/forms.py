@@ -106,7 +106,7 @@ class CommLogEntryForm(FlaskForm):
 class MemberAdminForm(FlaskForm):
     name = StringField('Full Name', validators=[DataRequired(), Length(max=200)])
     callsign = StringField('Call Sign', validators=[Optional(), Length(max=20)])
-    email = StringField('Email', validators=[DataRequired(), Length(max=200)])
+    email = StringField('Email', validators=[Optional(), Length(max=200)])
     phone = StringField('Phone', validators=[Optional(), Length(max=30)])
     street = StringField('Street', validators=[Optional(), Length(max=200)])
     city = StringField('City', validators=[Optional(), Length(max=100)])

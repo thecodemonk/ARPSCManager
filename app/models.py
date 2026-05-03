@@ -118,7 +118,7 @@ class Member(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Text, nullable=False)
     callsign = db.Column(db.Text)
-    email = db.Column(db.Text, unique=True, nullable=False)
+    email = db.Column(db.Text, unique=True, nullable=True)
     phone = db.Column(db.Text)
     street = db.Column(db.Text)
     city = db.Column(db.Text)

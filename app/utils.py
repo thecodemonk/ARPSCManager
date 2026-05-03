@@ -71,9 +71,12 @@ def get_all_siren_statuses(sirens, year=None):
     )
 
     # Compute statuses
-    # Priority: failed > flagged > passed > overdue > assigned > untested
+    # Priority: failed > flagged > passed > assigned > overdue > untested
     # "Flagged" (needs_retest) overrides "passed" so admins can mark a
     # previously-passing siren for recheck and have it show on the dashboard.
+    # "Assigned" beats "overdue" so a claim for an upcoming test is visible
+    # — otherwise overdue sirens that someone has volunteered to test still
+    # appear unclaimed on the dashboard.
     statuses = {}
     for sid in siren_ids:
         if sid in year_results and not year_results[sid]:
@@ -82,10 +85,10 @@ def get_all_siren_statuses(sirens, year=None):
             statuses[sid] = 'flagged'
         elif sid in year_results:
             statuses[sid] = 'passed'
-        elif sid not in last_test_dates or last_test_dates[sid] < overdue_cutoff:
-            statuses[sid] = 'overdue'
         elif sid in assigned_siren_ids:
             statuses[sid] = 'assigned'
+        elif sid not in last_test_dates or last_test_dates[sid] < overdue_cutoff:
+            statuses[sid] = 'overdue'
         else:
             statuses[sid] = 'untested'
 

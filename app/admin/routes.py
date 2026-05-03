@@ -520,7 +520,7 @@ def members():
     }
 
     # Find admin accounts that don't have a matching member record
-    member_emails = {m.email.lower() for m in Member.query.with_entities(Member.email).all()}
+    member_emails = {m.email.lower() for m in Member.query.with_entities(Member.email).all() if m.email}
     admin_emails_without_member = [
         a for a in AdminUser.query.all()
         if a.email.lower() not in member_emails
@@ -534,7 +534,7 @@ def members():
 @admin_bp.route('/members/add-admins', methods=['POST'])
 @admin_required
 def members_add_admins():
-    member_emails = {m.email.lower() for m in Member.query.with_entities(Member.email).all()}
+    member_emails = {m.email.lower() for m in Member.query.with_entities(Member.email).all() if m.email}
     admins = AdminUser.query.all()
     added = 0
     for admin in admins:
@@ -549,6 +549,30 @@ def members_add_admins():
     db.session.commit()
     flash(f'Created {added} member record(s) from admin accounts.', 'success')
     return redirect(url_for('admin.members'))
+
+
+@admin_bp.route('/members/add', methods=['GET', 'POST'])
+@admin_required
+def member_add():
+    form = MemberAdminForm()
+    if request.method == 'GET':
+        form.active.data = True
+    if form.validate_on_submit():
+        from ..utils import snapshot_member_program_state, stamp_program_audit_dates
+        email = (form.email.data or '').strip().lower() or None
+        if email and Member.query.filter(db.func.lower(Member.email) == email).first():
+            flash(f'A member with email {email} already exists.', 'warning')
+            return render_template('admin/member_form.html', form=form, member=None)
+        member = Member(email=email)
+        prior = snapshot_member_program_state(member)
+        form.populate_obj(member)
+        member.email = email
+        stamp_program_audit_dates(member, prior)
+        db.session.add(member)
+        db.session.commit()
+        flash(f'Member {member.name} created.', 'success')
+        return redirect(url_for('admin.member_detail', id=member.id))
+    return render_template('admin/member_form.html', form=form, member=None)
 
 
 @admin_bp.route('/members/inactive')
@@ -1677,11 +1701,23 @@ def import_confirm():
                 'can_edit_sirens',
             )
             for row in reader:
-                email = (row.get('email') or '').strip().lower()
-                if not email:
+                email = (row.get('email') or '').strip().lower() or None
+                name = (row.get('name') or '').strip()
+                callsign = (row.get('callsign') or '').strip()
+                # Need *some* identifier — name is the floor.
+                if not email and not name:
                     skipped += 1
                     continue
-                existing = Member.query.filter(db.func.lower(Member.email) == email).first()
+                if email:
+                    existing = Member.query.filter(db.func.lower(Member.email) == email).first()
+                else:
+                    # Dedupe emailless rows by name+callsign (case-insensitive) so
+                    # re-importing the same CSV doesn't create duplicates.
+                    existing = Member.query.filter(
+                        Member.email.is_(None),
+                        db.func.lower(Member.name) == name.lower(),
+                        db.func.lower(db.func.coalesce(Member.callsign, '')) == callsign.lower(),
+                    ).first()
                 if existing:
                     prior = snapshot_member_program_state(existing)
                     existing.name = row.get('name', existing.name).strip()
