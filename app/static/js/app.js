@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var onlyOverdueWrapper = document.getElementById('only-overdue-wrapper');
   var onlyOverdueCheckbox = document.getElementById('only-overdue');
   if (statusFilter && table) {
-    var currentStatus = 'all';
+    var initialActive = statusFilter.querySelector('.btn.active');
+    var currentStatus = initialActive ? initialActive.dataset.status : 'all';
     var needsTestingSet = ['overdue', 'flagged', 'untested'];
 
     function applyFilter() {
@@ -58,6 +59,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (onlyOverdueCheckbox) {
       onlyOverdueCheckbox.addEventListener('change', applyFilter);
     }
+
+    applyFilter();
   }
 
   // Conditional rotation field on test form
