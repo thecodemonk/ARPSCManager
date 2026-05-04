@@ -60,9 +60,13 @@ def siren_detail(siren_id):
 def signup():
     form = SignupForm()
 
-    # Populate siren choices
+    # Populate siren choices, excluding sirens that already passed this year.
+    # Flagged sirens (needs_retest) keep status 'flagged' even after a pass,
+    # so they remain available for volunteers to recheck.
     sirens = Siren.query.filter_by(active=True).order_by(Siren.siren_id).all()
-    form.siren_id.choices = [(s.id, f'{s.siren_id} — {s.name}') for s in sirens]
+    statuses, _ = get_all_siren_statuses(sirens)
+    available_sirens = [s for s in sirens if statuses.get(s.id) != 'passed']
+    form.siren_id.choices = [(s.id, f'{s.siren_id} — {s.name}') for s in available_sirens]
 
     # Populate upcoming test dates
     today = date.today()
@@ -79,8 +83,12 @@ def signup():
 
     # Pre-select siren from query param
     if request.method == 'GET':
-        if request.args.get('siren'):
-            form.siren_id.data = request.args.get('siren', type=int)
+        requested_id = request.args.get('siren', type=int)
+        if requested_id:
+            if requested_id in {s.id for s in sirens} and requested_id not in {s.id for s in available_sirens}:
+                flash('That siren has already passed testing this year. If it needs to be rechecked, an admin can flag it for retest.', 'warning')
+                return redirect(url_for('public.dashboard'))
+            form.siren_id.data = requested_id
         # Pre-fill volunteer name for logged-in members
         if current_user.is_authenticated and isinstance(current_user, Member):
             if not form.volunteer_name.data:

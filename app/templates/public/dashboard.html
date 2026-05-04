@@ -19,15 +19,18 @@
   <input type="text" id="siren-filter" class="form-control" placeholder="Filter sirens by ID, name, or location...">
 </div>
 
+{% set needs_testing_count = status_counts.overdue + status_counts.flagged + status_counts.untested %}
 <div class="mb-3">
   <div class="btn-group btn-group-sm" role="group" id="status-filter">
     <button type="button" class="btn btn-outline-secondary active" data-status="all">All ({{ sirens|length }})</button>
     <button type="button" class="btn btn-outline-success" data-status="passed">Passed ({{ status_counts.passed }})</button>
     <button type="button" class="btn btn-outline-danger" data-status="failed">Failed ({{ status_counts.failed }})</button>
-    <button type="button" class="btn btn-outline-warning" data-status="overdue">Overdue ({{ status_counts.overdue }})</button>
-    <button type="button" class="btn btn-outline-info" data-status="flagged">Flagged ({{ status_counts.flagged }})</button>
     <button type="button" class="btn btn-outline-info" data-status="assigned">Assigned ({{ status_counts.assigned }})</button>
-    <button type="button" class="btn btn-outline-secondary" data-status="untested">Untested ({{ status_counts.untested }})</button>
+    <button type="button" class="btn btn-outline-warning" data-status="needs-testing">Needs Testing ({{ needs_testing_count }})</button>
+  </div>
+  <div class="form-check mt-2 d-none" id="only-overdue-wrapper">
+    <input class="form-check-input" type="checkbox" id="only-overdue">
+    <label class="form-check-label" for="only-overdue">Only overdue (no test in over 12 months)</label>
   </div>
 </div>
 
@@ -66,7 +69,7 @@
         <td>{{ siren.siren_type }}</td>
         <td><span class="badge bg-{{ statuses[siren.id] | status_badge }}">{{ statuses[siren.id] | capitalize }}</span></td>
         <td>{{ last_tests.get(siren.id, '') | format_date }}</td>
-        <td><a href="{{ url_for('public.signup', siren=siren.id) }}" class="btn btn-outline-primary btn-sm" title="Volunteer for this siren">Volunteer</a></td>
+        <td>{% if statuses[siren.id] != 'passed' %}<a href="{{ url_for('public.signup', siren=siren.id) }}" class="btn btn-outline-primary btn-sm" title="Volunteer for this siren">Volunteer</a>{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>

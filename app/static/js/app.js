@@ -15,27 +15,49 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Status filter buttons
+  // Status filter buttons. "needs-testing" is a virtual filter that combines
+  // overdue/flagged/untested rows, with an optional "Only Overdue" sub-filter.
   var statusFilter = document.getElementById('status-filter');
+  var onlyOverdueWrapper = document.getElementById('only-overdue-wrapper');
+  var onlyOverdueCheckbox = document.getElementById('only-overdue');
   if (statusFilter && table) {
+    var currentStatus = 'all';
+    var needsTestingSet = ['overdue', 'flagged', 'untested'];
+
+    function applyFilter() {
+      var onlyOverdue = onlyOverdueCheckbox && onlyOverdueCheckbox.checked;
+      var rows = table.querySelectorAll('tbody tr');
+      rows.forEach(function (row) {
+        var rs = row.dataset.status;
+        var show;
+        if (currentStatus === 'all') {
+          show = true;
+        } else if (currentStatus === 'needs-testing') {
+          show = onlyOverdue ? rs === 'overdue' : needsTestingSet.indexOf(rs) !== -1;
+        } else {
+          show = rs === currentStatus;
+        }
+        row.style.display = show ? '' : 'none';
+      });
+      if (onlyOverdueWrapper) {
+        onlyOverdueWrapper.classList.toggle('d-none', currentStatus !== 'needs-testing');
+      }
+    }
+
     statusFilter.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-status]');
       if (!btn) return;
-      // Update active state
       statusFilter.querySelectorAll('.btn').forEach(function (b) {
         b.classList.remove('active');
       });
       btn.classList.add('active');
-      var status = btn.dataset.status;
-      var rows = table.querySelectorAll('tbody tr');
-      rows.forEach(function (row) {
-        if (status === 'all' || row.dataset.status === status) {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
-        }
-      });
+      currentStatus = btn.dataset.status;
+      applyFilter();
     });
+
+    if (onlyOverdueCheckbox) {
+      onlyOverdueCheckbox.addEventListener('change', applyFilter);
+    }
   }
 
   // Conditional rotation field on test form
